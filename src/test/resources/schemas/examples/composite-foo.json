@@ -1,7 +1,32 @@
-{
-  "s" : "string",
-  "f" : {
-    "s" : "string",
-    "b" : true
-  }
-}
+import boto3
+
+def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, max_tasks):
+    client = boto3.client('application-autoscaling')
+
+    # Registrar o alvo escalável
+    client.register_scalable_target(
+        ServiceNamespace='ecs',
+        ResourceId=f'service/{cluster_name}/{service_name}',
+        ScalableDimension='ecs:service:DesiredCount',
+        MinCapacity=min_tasks,
+        MaxCapacity=max_tasks
+    )
+    print("Scalable target registered successfully.")
+
+    # Definir políticas de escalabilidade
+    client.put_scaling_policy(
+        PolicyName='TargetTrackingScalingPolicy',
+        ServiceNamespace='ecs',
+        ResourceId=f'service/{cluster_name}/{service_name}',
+        ScalableDimension='ecs:service:DesiredCount',
+        PolicyType='TargetTrackingScaling',
+        TargetTrackingScalingPolicyConfiguration={
+            'TargetValue': 50.0,  # Exemplo: 50% de utilização de CPU
+            'PredefinedMetricSpecification': {
+                'PredefinedMetricType': 'ECSServiceAverageCPUUtilization'
+            },
+            'ScaleInCooldown': 60,
+            'ScaleOutCooldown': 60
+        }
+    )
+    print("Scaling policy created successfully.")
