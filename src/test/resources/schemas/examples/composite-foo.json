@@ -1,23 +1,30 @@
-"Parameters": {
-    "AutoScaling": {
-        "Type": "Struct",
-        "Description": "Auto Scaling configuration parameters.",
-        "Properties": {
-            "MinTask": {
-                "Default": 1,
-                "Type": "Number",
-                "Description": "Número mínimo de tasks no Auto Scaling."
-            },
-            "MaxTask": {
-                "Default": 10,
-                "Type": "Number",
-                "Description": "Número máximo de tasks no Auto Scaling."
-            },
-            "DesiredTask": {
-                "Default": 2,
-                "Type": "Number",
-                "Description": "Número desejado de tasks no Auto Scaling."
-            }
-        }
-    }
-}
+jobs:
+  read-maestro-config:
+    runs-on: ${{ inputs.runs_on }}
+    steps:
+      - name: Read Maestro Config
+        uses: ./.github/workflows/read-maestro-config.yml
+        with:
+          build_environment: feat
+          secrets: inherit
+
+      - name: Get Token
+        id: get_workflow_token
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/peter-murray/workflow-application-token
+        with:
+          application_id: ${{ secrets.APPLICATION_ID }}
+          application_private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Role Info
+        run: |
+          export "REPO_ID=$(curl -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }})
+          echo $REPO_ID
+          echo "ROLE_NAME=itau-github-repo-${REPO_ID}" >> $GITHUB_ENV
+
+  open-pr-to-develop:
+    needs: read-maestro-config
+    uses: itau-corp/itau-up2-reusable-workflows-common-pull-request/.github/workflows/create.yml@v2
+    with:
+      target-branch: "develop"
+      custom-body: itau-github-repo-${{ needs.read-maestro-config.outputs.REPO_ID }}
+      secrets: inherit
