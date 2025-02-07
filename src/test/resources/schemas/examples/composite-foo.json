@@ -1,3 +1,16 @@
+on:
+  workflow_call:
+    APPLICATION_ID:
+      required: true
+    APP_PRIVATE_KEY:
+      required: true
+    APU:
+      required: true
+    ADU:
+      required: true
+    ADPT:
+      required: true
+
 jobs:
   read-maestro-config:
     runs-on: ${{ inputs.runs_on }}
@@ -10,14 +23,14 @@ jobs:
 
       - name: Get Token
         id: get_workflow_token
-        uses: itau-corp/itau-up2-action-external-management/.github/actions/peter-murray/workflow-application-token
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/peter-murray/workflow-application-token@v1
         with:
           application_id: ${{ secrets.APPLICATION_ID }}
           application_private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Role Info
         run: |
-          export "REPO_ID=$(curl -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }})
+          export "REPO_ID=$(curl -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/id)"
           echo $REPO_ID
           echo "ROLE_NAME=itau-github-repo-${REPO_ID}" >> $GITHUB_ENV
 
