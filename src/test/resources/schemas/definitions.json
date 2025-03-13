@@ -1,54 +1,63 @@
-{
-  "CompositeFoo": {
-    "type": "object",
-    "properties": {
-      "s": {
-        "type": "string"
-      },
-      "f": {
-        "$ref": "#/components/schemas/SimpleFoo"
-      }
-    },
-    "example": {
-      "s": "string",
-      "f": {
-        "s": "string",
-        "b": true
-      }
-    }
-  },
-  "SimpleFoo": {
-    "type": "object",
-    "properties": {
-      "s": {
-        "type": "string"
-      },
-      "b": {
-        "type": "boolean"
-      }
-    },
-    "example": {
-      "s": "string",
-      "b": true
-    }
-  },
-  "FooWithEnum": {
-    "type": "object",
-    "properties": {
-      "s": {
-        "type": "string"
-      },
-      "b": {
-        "type": "string",
-        "enum": [
-          "BAR1",
-          "BAR2"
-        ]
-      }
-    },
-    "example": {
-      "s": "string",
-      "b": "BAR1"
-    }
-  }
+import boto3
+import yaml  # Biblioteca para ler YAML
+
+# Dicionário de mapeamento das métricas suportadas
+METRIC_MAP = {
+    "CPU": "ECSServiceAverageCPUUtilization",
+    "Memory": "ECSServiceAverageMemoryUtilization",
+    # Futuras métricas podem ser adicionadas aqui
 }
+
+# Função para carregar a configuração do YAML
+def load_config(config_path="config.yml"):
+    with open(config_path, "r") as file:
+        return yaml.safe_load(file)
+
+def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, max_tasks, environment):
+    client = boto3.client('application-autoscaling')
+
+    # Carregar configuração do YAML
+    config = load_config()
+    
+    # Pegar as configurações do ambiente correto
+    env_config = config.get("Auto_scaling", {}).get(environment, {})
+    
+    # Pegar a métrica do usuário (padrão para CPU se não for definida)
+    metric = env_config.get("Metric", "CPU")
+
+    # Registrar o target de escalonamento
+    client.register_scalable_target(
+        ServiceNamespace='ecs',
+        ResourceId=f'service/{cluster_name}/{service_name}',
+        ScalableDimension='ecs:service:DesiredCount',
+        MinCapacity=min_tasks,
+        MaxCapacity=max_tasks
+    )
+
+    print("Scalable target registrada com sucesso.")
+
+    # Verifica se a métrica escolhida está no dicionário
+    metric_type = METRIC_MAP.get(metric)
+
+    if not metric_type:
+        print(f"Erro: A métrica '{metric}' não é suportada.")
+        return
+
+    # Criar a política de escalonamento
+    client.put_scaling_policy(
+        PolicyName=f"{metric}ScalingPolicy",
+        ServiceNamespace='ecs',
+        ResourceId=f'service/{cluster_name}/{service_name}',
+        ScalableDimension='ecs:service:DesiredCount',
+        PolicyType='TargetTrackingScaling',
+        TargetTrackingScalingPolicyConfiguration={
+            'TargetValue': env_config.get("Target_value", 50),
+            'PredefinedMetricSpecification': {
+                'PredefinedMetricType': metric_type
+            },
+            'ScaleInCooldown': 60,
+            'ScaleOutCooldown': 60
+        }
+    )
+
+    print(f"Scaling policy criada com sucesso para a métrica: {metric}")
