@@ -1,5 +1,4 @@
 import boto3
-import yaml  # Biblioteca para ler YAML
 
 # Dicionário de mapeamento das métricas suportadas
 METRIC_MAP = {
@@ -8,22 +7,8 @@ METRIC_MAP = {
     # Futuras métricas podem ser adicionadas aqui
 }
 
-# Função para carregar a configuração do YAML
-def load_config(config_path="config.yml"):
-    with open(config_path, "r") as file:
-        return yaml.safe_load(file)
-
-def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, max_tasks, environment):
+def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, max_tasks, target_value, metric):
     client = boto3.client('application-autoscaling')
-
-    # Carregar configuração do YAML
-    config = load_config()
-    
-    # Pegar as configurações do ambiente correto
-    env_config = config.get("Auto_scaling", {}).get(environment, {})
-    
-    # Pegar a métrica do usuário (padrão para CPU se não for definida)
-    metric = env_config.get("Metric", "CPU")
 
     # Registrar o target de escalonamento
     client.register_scalable_target(
@@ -37,11 +22,7 @@ def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, ma
     print("Scalable target registrada com sucesso.")
 
     # Verifica se a métrica escolhida está no dicionário
-    metric_type = METRIC_MAP.get(metric)
-
-    if not metric_type:
-        print(f"Erro: A métrica '{metric}' não é suportada.")
-        return
+    metric_type = METRIC_MAP.get(metric, "ECSServiceAverageCPUUtilization")  # Default para CPU
 
     # Criar a política de escalonamento
     client.put_scaling_policy(
@@ -51,7 +32,7 @@ def register_auto_scaling(cluster_name, service_name, resource_id, min_tasks, ma
         ScalableDimension='ecs:service:DesiredCount',
         PolicyType='TargetTrackingScaling',
         TargetTrackingScalingPolicyConfiguration={
-            'TargetValue': env_config.get("Target_value", 50),
+            'TargetValue': target_value,
             'PredefinedMetricSpecification': {
                 'PredefinedMetricType': metric_type
             },
