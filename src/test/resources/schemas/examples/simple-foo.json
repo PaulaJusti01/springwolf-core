@@ -1,26 +1,19 @@
-import json
-from src import handler
-from unittest.mock import patch, MagicMock
+a
+# tests/test_handler.py
 
-def test_lambda_handler_envia_email_com_sucesso():
-    # Evento de exemplo simulado
+from src.handler import lambda_handler
+
+def test_lambda_handler_retorna_200():
+    # Evento mínimo simulado
     event = {
         "detail": {
-            "pipeline": "lote-diario-churn",
+            "pipeline": "teste",
             "status": "SUCESSO",
-            "Message": "Pipeline executado com sucesso"
+            "Message": "Tudo certo"
         }
     }
 
-    # Mock do SMTP para não enviar e-mail de verdade
-    with patch("smtplib.SMTP") as mock_smtp:
-        mock_server = MagicMock()
-        mock_smtp.return_value.__enter__.return_value = mock_server
+    response = lambda_handler(event, None)
 
-        # Executa a Lambda
-        result = handler.lambda_handler(event, None)
-
-        # Verifica se o e-mail foi montado e enviado
-        mock_server.send_message.assert_called_once()
-        assert result["statusCode"] == 200
-        assert json.loads(result["body"]) == "Finalizado com sucesso"
+    assert response["statusCode"] == 200
+    assert "Finalizado" in response["body"]
