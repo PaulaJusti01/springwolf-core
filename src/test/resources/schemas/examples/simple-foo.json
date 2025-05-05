@@ -1,37 +1,44 @@
 a
-import json
-import smtplib
-from email.mime.text import MIMEText
-
-def lambda_handler(event, context):
-    print("Evento recebido:", json.dumps(event))
-
-    detail = event.get("detail", {})
-    status = detail.get("status", "desconhecido")
-    pipeline = detail.get("pipeline", "não informado")
-    message = detail.get("Message", "sem mensagem")
-
-    body = f"""
-    Resultado da execução do pipeline: {pipeline}
-
-    Status: {status}
-    Mensagem: {message}
-    """
-    subject = f"[IU Lotus] Resultado do pipeline {pipeline}"
-
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = "naoresponder@itau.com.br"
-    msg["To"] = "cientista@itau.com.br"
-
-    try:
-        with smtplib.SMTP("smtp-relay.interno.itau", 25) as server:
-            server.send_message(msg)
-        print("E-mail enviado com sucesso")
-    except Exception as e:
-        print("Erro ao enviar e-mail:", str(e))
-
-    return {
-        "statusCode": 200,
-        "body": json.dumps("Finalizado com sucesso")
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowKMSUsage",
+      "Effect": "Allow",
+      "Action": [
+        "kms:GenerateDataKey",
+        "kms:Decrypt"
+      ],
+      "Resource": "arn:aws:kms:sa-east-1:<ACCOUNT_ID>:key/<KEY_ID>"
+    },
+    {
+      "Sid": "AllowLoggingAndVPC",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords",
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets",
+        "xray:GetSamplingStatisticSummaries",
+        "ec2:CreateNetworkInterface",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DeleteNetworkInterface",
+        "ec2:AssignPrivateIpAddresses",
+        "ec2:UnassignPrivateIpAddresses"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowEventBridgeInvoke",
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
+      "Resource": "arn:aws:lambda:sa-east-1:<ACCOUNT_ID>:function:lambda-lotus-batch-notificacao"
     }
+  ]
+}
