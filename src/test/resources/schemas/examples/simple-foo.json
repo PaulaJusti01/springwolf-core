@@ -1,44 +1,26 @@
-a
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowKMSUsage",
-      "Effect": "Allow",
-      "Action": [
-        "kms:GenerateDataKey",
-        "kms:Decrypt"
-      ],
-      "Resource": "arn:aws:kms:sa-east-1:<ACCOUNT_ID>:key/<KEY_ID>"
-    },
-    {
-      "Sid": "AllowLoggingAndVPC",
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "xray:PutTraceSegments",
-        "xray:PutTelemetryRecords",
-        "xray:GetSamplingRules",
-        "xray:GetSamplingTargets",
-        "xray:GetSamplingStatisticSummaries",
-        "ec2:CreateNetworkInterface",
-        "ec2:DescribeNetworkInterfaces",
-        "ec2:DeleteNetworkInterface",
-        "ec2:AssignPrivateIpAddresses",
-        "ec2:UnassignPrivateIpAddresses"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowEventBridgeInvoke",
-      "Effect": "Allow",
-      "Action": "lambda:InvokeFunction",
-      "Principal": {
-        "Service": "events.amazonaws.com"
-      },
-      "Resource": "arn:aws:lambda:sa-east-1:<ACCOUNT_ID>:function:lambda-lotus-batch-notificacao"
+import json
+from src import handler
+from unittest.mock import patch, MagicMock
+
+def test_lambda_handler_envia_email_com_sucesso():
+    # Evento de exemplo simulado
+    event = {
+        "detail": {
+            "pipeline": "lote-diario-churn",
+            "status": "SUCESSO",
+            "Message": "Pipeline executado com sucesso"
+        }
     }
-  ]
-}
+
+    # Mock do SMTP para não enviar e-mail de verdade
+    with patch("smtplib.SMTP") as mock_smtp:
+        mock_server = MagicMock()
+        mock_smtp.return_value.__enter__.return_value = mock_server
+
+        # Executa a Lambda
+        result = handler.lambda_handler(event, None)
+
+        # Verifica se o e-mail foi montado e enviado
+        mock_server.send_message.assert_called_once()
+        assert result["statusCode"] == 200
+        assert json.loads(result["body"]) == "Finalizado com sucesso"
