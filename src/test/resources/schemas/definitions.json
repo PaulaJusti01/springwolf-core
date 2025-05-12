@@ -1,61 +1,45 @@
-auto_scaling_data = config_data.get("parameters", {}).get("auto_scaling")
+a
+import json
+import smtplib
+import os
+from email.mime.text import MIMEText
 
-if auto_scaling_data is not None:
-    print("########### AUTO SCALING ATIVADO ###########")
-    min_task = auto_scaling_data.get("min_task")
-    max_task = auto_scaling_data.get("max_task")
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp-relay.interno.itau")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "25"))
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "nao-responder@itau.com.br")
+TO_EMAIL = os.environ.get("TO_EMAIL", "default@itau.com.br")  # Pode ser sobrescrito por evento
 
-    if min_task is None or max_task is None:
-        raise ValueError("Parâmetros 'min_task' e 'max_task' são obrigatórios no auto_scaling.")
+def lambda_handler(event, context):
+    print("Evento recebido:", json.dumps(event))
 
-    if not isinstance(min_task, int) or not isinstance(max_task, int):
-        raise ValueError("Os valores de máximo e mínimo devem ser inteiros.")
+    detail = event.get("detail", {})
+    status = detail.get("status", "desconhecido")
+    pipeline = detail.get("pipeline", "não informado")
+    message = detail.get("Message", "sem mensagem")
+    to_email = detail.get("to_email", TO_EMAIL)  # Permite sobrescrever via evento
 
-    if min_task >= max_task:
-        raise ValueError("min_task deve ser menor que max_task.")
+    body = f"""
+Resultado da execução do pipeline: {pipeline}
 
-    parameters.append({
-        "Parameter": "AutoScalingMinTask.Default",
-        "Type": "literal",
-        "Value": min_task,
-    })
-    parameters.append({
-        "Parameter": "AutoScalingMaxTask.Default",
-        "Type": "literal",
-        "Value": max_task,
-    })
+Status: {status}
+Mensagem: {message}
+"""
 
-    # Verifica CPU e memória
-    env_scaling_data = auto_scaling_data.get(env, {})
-    cpu_target_value = env_scaling_data.get("target_value")
-    memory_target_value = env_scaling_data.get("memory_target_value")
+    subject = f"[IU Lotus] Resultado do pipeline {pipeline}"
 
-    if cpu_target_value is not None:
-        parameters.append({
-            "Parameter": "EnableCpuAutoScaling.Default",
-            "Type": "literal",
-            "Value": "true",
-        })
-        parameters.append({
-            "Parameter": "CpuTargetValue.Default",
-            "Type": "literal",
-            "Value": cpu_target_value,
-        })
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = FROM_EMAIL
+    msg["To"] = to_email
 
-    if memory_target_value is not None:
-        parameters.append({
-            "Parameter": "EnableMemoryAutoScaling.Default",
-            "Type": "literal",
-            "Value": "true",
-        })
-        parameters.append({
-            "Parameter": "MemoryTargetValue.Default",
-            "Type": "literal",
-            "Value": memory_target_value,
-        })
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.send_message(msg)
+            print("E-mail enviado com sucesso")
+    except Exception as e:
+        print("Erro ao enviar e-mail:", str(e))
 
-    if cpu_target_value is None and memory_target_value is None:
-        raise ValueError("auto_scaling definido, mas nenhum target (CPU ou memória) foi informado.")
-
-else:
-    print("Auto Scaling não definido, seguindo sem configurar.")
+    return {
+        "statusCode": 200,
+        "body": json.dumps("Finalizado com sucesso")
+    }
