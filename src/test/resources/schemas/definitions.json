@@ -1,30 +1,21 @@
 a
-def build_html_email(nome_modelo, projeto, status):
-    cor_status = "#28a745" if status.lower() == "sucesso" else "#dc3545"
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-    return f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-        <div style="background-color: #003366; padding: 20px; color: white;">
-            <h2>Notificação de Execução de Modelo</h2>
-        </div>
+def send_email(destinatario, assunto, html):
+    remetente = "generico@itau.com.br"
+    senha = "SENHA_DO_EMAIL"  # Idealmente deve ser guardada no Secrets Manager
 
-        <div style="padding: 20px;">
-            <p>Olá,</p>
-            <p>Segue o status da execução:</p>
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = assunto
+    msg["From"] = remetente
+    msg["To"] = destinatario
 
-            <ul>
-                <li><strong>Projeto:</strong> {projeto}</li>
-                <li><strong>Modelo:</strong> {nome_modelo}</li>
-                <li><strong>Status:</strong> <span style="color: {cor_status}; font-weight: bold;">{status.upper()}</span></li>
-            </ul>
+    parte_html = MIMEText(html, "html")
+    msg.attach(parte_html)
 
-            <p>Este é um e-mail automático, por favor não responda.</p>
-        </div>
-
-        <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #555;">
-            Enviado por sistema automatizado • Itaú
-        </div>
-    </body>
-    </html>
-    """
+    with smtplib.SMTP("smtp.office365.com", 587) as server:
+        server.starttls()
+        server.login(remetente, senha)
+        server.sendmail(remetente, destinatario, msg.as_string())
