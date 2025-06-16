@@ -1,34 +1,30 @@
 a
-import json
-from email_sender import send_email
-from email_html import build_html_email
+def build_html_email(nome_modelo, projeto, status):
+    cor_status = "#28a745" if status.lower() == "sucesso" else "#dc3545"
 
-def lambda_handler(event, context):
-    try:
-        # Pega os dados do evento
-        detail = event.get("detail", {})
-        nome_modelo = detail.get("nome_modelo", "Nome Desconhecido")
-        projeto = detail.get("projeto", "Projeto Desconhecido")
-        status = detail.get("status", "Status não informado")
-        destinatario = detail.get("destinatario", "destinatario@exemplo.com")
+    return f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+        <div style="background-color: #003366; padding: 20px; color: white;">
+            <h2>Notificação de Execução de Modelo</h2>
+        </div>
 
-        # Gera título e HTML do e-mail
-        titulo = f"Execução do modelo '{nome_modelo}' - {status.upper()}"
-        corpo_html = build_html_email(nome_modelo, projeto, status)
+        <div style="padding: 20px;">
+            <p>Olá,</p>
+            <p>Segue o status da execução:</p>
 
-        # Envia o e-mail
-        send_email(
-            destinatario=destinatario,
-            assunto=titulo,
-            html=corpo_html
-        )
+            <ul>
+                <li><strong>Projeto:</strong> {projeto}</li>
+                <li><strong>Modelo:</strong> {nome_modelo}</li>
+                <li><strong>Status:</strong> <span style="color: {cor_status}; font-weight: bold;">{status.upper()}</span></li>
+            </ul>
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps("Email enviado com sucesso.")
-        }
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps(f"Erro ao enviar e-mail: {str(e)}")
-        }
+            <p>Este é um e-mail automático, por favor não responda.</p>
+        </div>
+
+        <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #555;">
+            Enviado por sistema automatizado • Itaú
+        </div>
+    </body>
+    </html>
+    """
