@@ -1,45 +1,142 @@
 a
-import json
-import smtplib
+import boto3
 import os
-from email.mime.text import MIMEText
-
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp-relay.interno.itau")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "25"))
-FROM_EMAIL = os.environ.get("FROM_EMAIL", "nao-responder@itau.com.br")
-TO_EMAIL = os.environ.get("TO_EMAIL", "default@itau.com.br")  # Pode ser sobrescrito por evento
+from jinja2 import Template
 
 def lambda_handler(event, context):
-    print("Evento recebido:", json.dumps(event))
+    ses = boto3.client('ses', region_name='us-east-1')
+    
+    # Dados do evento
+    nome_projeto = event.get('nome_projeto', 'Projeto Desconhecido')
+    nome_modelo = event.get('nome_modelo', 'modelo-desconhecido')
+    hora_inicio = event.get('hora_inicio', '00:00:00')
+    hora_fim = event.get('hora_fim', '00:00:00')
+    conta_aws = event.get('conta_aws', 'Conta não informada')
+    base_resultado = event.get('base_resultado', 'base-desconhecida')
+    status_execucao = event.get('status', 'SUCESSO').upper()
 
-    detail = event.get("detail", {})
-    status = detail.get("status", "desconhecido")
-    pipeline = detail.get("pipeline", "não informado")
-    message = detail.get("Message", "sem mensagem")
-    to_email = detail.get("to_email", TO_EMAIL)  # Permite sobrescrever via evento
+    assunto = f"State Machine {status_execucao.lower()} - {nome_projeto}"
 
-    body = f"""
-Resultado da execução do pipeline: {pipeline}
+    # Escolher cor e mensagem com base no status
+    if status_execucao == "FALHA":
+        titulo = "State Machine falhou na execução!"
+        cor = "#b7322c"  # vermelho
+    else:
+        titulo = "State Machine executada com sucesso!"
+        cor = "#007e8a"  # verde/azul
 
-Status: {status}
-Mensagem: {message}
-"""
+    # Caminhos dos SVGs
+    caminho_header = "/mnt/data/file-RXThWVpoETLmw5x6W5jRJ1"  # Header.svg
+    caminho_footer = "/mnt/data/file-Vs2z4BCCAjuPqSiE9CQU4H"  # Footer.svg
 
-    subject = f"[IU Lotus] Resultado do pipeline {pipeline}"
+    with open(caminho_header, "r", encoding="utf-8") as f:
+        header_svg = f.read()
+    with open(caminho_footer, "r", encoding="utf-8") as f:
+        footer_svg = f.read()
 
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = FROM_EMAIL
-    msg["To"] = to_email
+    # HTML com placeholders Jinja2
+    html_template = Template(f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f9f9f9;
+            }}
+            .content {{
+                padding: 20px;
+            }}
+            .card {{
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                margin: 20px auto;
+                max-width: 600px;
+                overflow: hidden;
+            }}
+            .status {{
+                color: {{ cor }};
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }}
+            ul {{
+                padding-left: 20px;
+            }}
+            a {{
+                color: #007e8a;
+                text-decoration: none;
+            }}
+            .footer {{
+                font-size: 12px;
+                color: #666;
+                margin-top: 20px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            {{ header_svg | safe }}
+            <div class="content">
+                <div class="status">{{ titulo }}</div>
+                <p>O projeto <strong>{{ nome_projeto }}</strong> foi processado pela esteira Maestro Batch Scheduled.</p>
 
-    try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.send_message(msg)
-            print("E-mail enviado com sucesso")
-    except Exception as e:
-        print("Erro ao enviar e-mail:", str(e))
+                <p><strong>Confira os detalhes de deploy:</strong></p>
+                <ul>
+                    <li><strong>Nome do modelo:</strong> {{ nome_modelo }}</li>
+                    <li><strong>Hora de início:</strong> {{ hora_inicio }}</li>
+                    <li><strong>Hora de término:</strong> {{ hora_fim }}</li>
+                    <li><strong>Conta AWS:</strong> {{ conta_aws }}</li>
+                    <li><strong>Base de resultados:</strong> {{ base_resultado }}</li>
+                </ul>
+
+                <p><strong>Acesse os links abaixo para mais informações:</strong></p>
+                <ul>
+                    <li><a href="https://documentacao.exemplo">Acesse a documentação</a></li>
+                    <li><a href="https://chamado.exemplo">Abra um chamado</a></li>
+                </ul>
+
+                <p class="footer">IU Lotus ML - Squad Dalí<br>e-mail.atendimento@itau</p>
+            </div>
+            {{ footer_svg | safe }}
+        </div>
+    </body>
+    </html>
+    """)
+
+    # Renderizando HTML com os valores do evento
+    corpo_email = html_template.render(
+        header_svg=header_svg,
+        footer_svg=footer_svg,
+        titulo=titulo,
+        cor=cor,
+        nome_projeto=nome_projeto,
+        nome_modelo=nome_modelo,
+        hora_inicio=hora_inicio,
+        hora_fim=hora_fim,
+        conta_aws=conta_aws,
+        base_resultado=base_resultado
+    )
+
+    # Envio do e-mail
+    response = ses.send_email(
+        Source=os.environ['EMAIL_SOURCE'],
+        Destination={
+            'ToAddresses': [os.environ['EMAIL_DEST']]
+        },
+        Message={
+            'Subject': {'Data': assunto},
+            'Body': {
+                'Html': {'Data': corpo_email}
+            }
+        }
+    )
 
     return {
-        "statusCode": 200,
-        "body": json.dumps("Finalizado com sucesso")
+        'statusCode': 200,
+        'body': 'E-mail enviado com sucesso!',
+        'aws_response': response
     }
