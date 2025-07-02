@@ -1,24 +1,15 @@
-resource "aws_sqs_queue" "lotus_notification_queue" {
-  name = "lotus-notification-queue"
+a
+resource "aws_lambda_permission" "allow_sqs_to_invoke_lambda" {
+  statement_id  = "AllowSQSTrigger"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_function_name
+  principal     = "sqs.amazonaws.com"
+  source_arn    = aws_sqs_queue.minha_fila.arn
+}
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Id      = "AllowRS7ToSendMessages"
-    Statement = [
-      {
-        Sid       = "AllowEventBridgeRS7SendMessage"
-        Effect    = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::123456789012:root"
-        }
-        Action   = "sqs:SendMessage"
-        Resource = "arn:aws:sqs:sa-east-1:LO6_ACCOUNT_ID:lotus-notification-queue"
-        Condition = {
-          ArnEquals = {
-            "aws:SourceArn" = "arn:aws:events:sa-east-1:123456789012:event-bus/default"
-          }
-        }
-      }
-    ]
-  })
+resource "aws_lambda_event_source_mapping" "sqs_lambda_mapping" {
+  event_source_arn = aws_sqs_queue.minha_fila.arn
+  function_name    = var.lambda_function_arn
+  batch_size       = 10
+  enabled          = true
 }
