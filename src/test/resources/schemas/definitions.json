@@ -1,15 +1,14 @@
-a
-resource "aws_lambda_permission" "allow_sqs_to_invoke_lambda" {
-  statement_id  = "AllowSQSTrigger"
-  action        = "lambda:InvokeFunction"
-  function_name = var.lambda_function_name
-  principal     = "sqs.amazonaws.com"
-  source_arn    = aws_sqs_queue.minha_fila.arn
-}
+def aplicar_guardrail_hibrido(prompt):
+    resposta = gerar_resposta(prompt)
+    risco_regra = classificar_risco(resposta)
+    risco_modelo = classificar_risco_modelo(resposta)
 
-resource "aws_lambda_event_source_mapping" "sqs_lambda_mapping" {
-  event_source_arn = aws_sqs_queue.minha_fila.arn
-  function_name    = var.lambda_function_arn
-  batch_size       = 10
-  enabled          = true
-}
+    prioridades = {"ok": 0, "alerta": 1, "bloqueio": 2}
+    risco_final = max([risco_regra, risco_modelo], key=lambda r: prioridades[r])
+
+    if risco_final == "bloqueio":
+        return "[BLOQUEIO] Resposta bloqueada por regra ou modelo.\n\nResposta gerada:\n" + resposta
+    elif risco_final == "alerta":
+        return "[ALERTA] Resposta sinalizada para revisão humana.\n\nResposta gerada:\n" + resposta
+    else:
+        return f"[OK] Resposta segura.\n\n{resposta}"
