@@ -1,31 +1,167 @@
-version: '3'
-services:
-  app:
-    image: stavshamir/springwolf:0.0.2
-    links:
-      - kafka
-    environment:
-      BOOTSTRAP_SERVER: kafka:29092
-    ports:
-      - "8080:8080"
-    depends_on:
-      - kafka
-      - zookeeper
+version:
+  required: true
+  type: string
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 
+pipeline_type:
+  required: true
+  type: string
+  allowed:
+    - built_in
+    - byo_container
 
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+inference_type:
+  required: true
+  type: string
+  allowed:
+    - online
+    - offline
+    - batch
+
+infra:
+  required: false
+  type: dict
+  schema:
+    terraform:
+      required: false
+      type: dict
+      schema:
+        destroy:
+          required: true
+          anyof:
+            - type: boolean
+            - type: string
+              allowed: ["true", "false"]
+
+info:
+  required: true
+  type: dict
+  schema:
+    owner_contact_email:
+      required: true
+      type: string
+      regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    tech_team_email:
+      required: true
+      type: string
+      regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    sigla:
+      required: true
+      type: string
+    comunidade:
+      required: true
+      type: string
+    squad:
+      required: true
+      type: string
+    project_name:
+      required: true
+      type: string
+    aws_account:
+      required: true
+      type: dict
+      schema:
+        name:
+          required: true
+          type: string
+        number:
+          required: true
+          type: dict
+          schema:
+            analytics: {required: true, type: string, regex: '^\d{12}$'}
+            dev:       {required: true, type: string, regex: '^\d{12}$'}
+            hom:       {required: true, type: string, regex: '^\d{12}$'}
+            prod:      {required: true, type: string, regex: '^\d{12}$'}
+
+parameters:
+  required: true
+  type: dict
+  schema:
+    experiment_id:
+      required: true
+      type: string
+      regex: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+    id_mrm:
+      required: true
+      type: string
+      regex: '^\d+$'
+
+network:
+  required: true
+  type: dict
+  schema:
+    subnets:
+      required: true
+      type: dict
+      schema:
+        subnet_id_one:
+          required: true
+          type: dict
+          schema:
+            analytics: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            dev:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            hom:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            prod:      {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+        subnet_id_two:
+          required: true
+          type: dict
+          schema:
+            analytics: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            dev:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            hom:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            prod:      {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+        subnet_id_three:
+          required: true
+          type: dict
+          schema:
+            dev:  {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            hom:  {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            prod: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+    vpc:
+      required: true
+      type: dict
+      schema:
+        analytics: {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
+        dev:       {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
+        hom:       {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
+        prod:      {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
+
+# ---- opcional ----
+flavor:
+  required: false
+  type: dict
+  schema:
+    name:
+      required: true
+      type: string
+    version:
+      required: true
+      type: string
+    params:
+      required: true
+      type: dict
+      schema:
+        dev:  {required: false, type: dict, schema: &env_schema
+          enable_network_isolation: {required: false, type: boolean}
+          instance_type:            {required: false, type: string}
+          inference_environment:
+            required: false
+            type: dict
+            schema:
+              LOG_LEVEL: {required: false, type: string}
+          data_capture:
+            required: false
+            type: dict
+            schema:
+              mode:       {required: false, type: string, allowed: ["InputAndOutput"]}
+              percentage: {required: false, type: integer, min: 0, max: 100}
+          autoscaling:
+            required: false
+            type: dict
+            schema:
+              min_capacity:                         {required: false, type: integer}
+              max_capacity:                         {required: false, type: integer}
+              max_requests_per_minute_per_instance: {required: false, type: integer}
+              scale_in_cooldown_secs:               {required: false, type: integer}
+              scale_out_cooldown_secs:              {required: false, type: integer}
+        hom:  {required: false, type: dict, schema: *env_schema}
+        prod: {required: false, type: dict, schema: *env_schema}
