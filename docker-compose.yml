@@ -27,10 +27,9 @@ infra:
       schema:
         destroy:
           required: true
-          anyof:
-            - type: boolean
-            - type: string
-              allowed: ["true", "false"]
+          type:
+            - string
+            - boolean
 
 info:
   required: true
@@ -39,11 +38,9 @@ info:
     owner_contact_email:
       required: true
       type: string
-      regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
     tech_team_email:
       required: true
       type: string
-      regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
     sigla:
       required: true
       type: string
@@ -67,10 +64,26 @@ info:
           required: true
           type: dict
           schema:
-            analytics: {required: true, type: string, regex: '^\d{12}$'}
-            dev:       {required: true, type: string, regex: '^\d{12}$'}
-            hom:       {required: true, type: string, regex: '^\d{12}$'}
-            prod:      {required: true, type: string, regex: '^\d{12}$'}
+            analytics:
+              required: true
+              type:
+                - number
+                - string
+            dev:
+              required: true
+              type:
+                - number
+                - string
+            hom:
+              required: true
+              type:
+                - number
+                - string
+            prod:
+              required: true
+              type:
+                - number
+                - string
 
 parameters:
   required: true
@@ -79,11 +92,11 @@ parameters:
     experiment_id:
       required: true
       type: string
-      regex: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
     id_mrm:
       required: true
-      type: string
-      regex: '^\d+$'
+      type:
+        - number
+        - string
 
 network:
   required: true
@@ -97,35 +110,64 @@ network:
           required: true
           type: dict
           schema:
-            analytics: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            dev:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            hom:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            prod:      {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            analytics:
+              required: true
+              type: string
+            dev:
+              required: true
+              type: string
+            hom:
+              required: true
+              type: string
+            prod:
+              required: true
+              type: string
         subnet_id_two:
           required: true
           type: dict
           schema:
-            analytics: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            dev:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            hom:       {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            prod:      {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            analytics:
+              required: true
+              type: string
+            dev:
+              required: true
+              type: string
+            hom:
+              required: true
+              type: string
+            prod:
+              required: true
+              type: string
         subnet_id_three:
           required: true
           type: dict
           schema:
-            dev:  {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            hom:  {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
-            prod: {required: true, type: string, regex: '^subnet-[a-z0-9]+$'}
+            dev:
+              required: true
+              type: string
+            hom:
+              required: true
+              type: string
+            prod:
+              required: true
+              type: string
     vpc:
       required: true
       type: dict
       schema:
-        analytics: {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
-        dev:       {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
-        hom:       {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
-        prod:      {required: true, type: string, regex: '^vpc-[a-z0-9]+$'}
+        analytics:
+          required: true
+          type: string
+        dev:
+          required: true
+          type: string
+        hom:
+          required: true
+          type: string
+        prod:
+          required: true
+          type: string
 
-# ---- opcional ----
 flavor:
   required: false
   type: dict
@@ -140,28 +182,141 @@ flavor:
       required: true
       type: dict
       schema:
-        dev:  {required: false, type: dict, schema: &env_schema
-          enable_network_isolation: {required: false, type: boolean}
-          instance_type:            {required: false, type: string}
-          inference_environment:
-            required: false
-            type: dict
-            schema:
-              LOG_LEVEL: {required: false, type: string}
-          data_capture:
-            required: false
-            type: dict
-            schema:
-              mode:       {required: false, type: string, allowed: ["InputAndOutput"]}
-              percentage: {required: false, type: integer, min: 0, max: 100}
-          autoscaling:
-            required: false
-            type: dict
-            schema:
-              min_capacity:                         {required: false, type: integer}
-              max_capacity:                         {required: false, type: integer}
-              max_requests_per_minute_per_instance: {required: false, type: integer}
-              scale_in_cooldown_secs:               {required: false, type: integer}
-              scale_out_cooldown_secs:              {required: false, type: integer}
-        hom:  {required: false, type: dict, schema: *env_schema}
-        prod: {required: false, type: dict, schema: *env_schema}
+        dev:
+          required: false
+          type: dict
+          schema:
+            enable_network_isolation:
+              required: false
+              type: boolean
+            instance_type:
+              required: false
+              type: string
+            inference_environment:
+              required: false
+              type: dict
+              schema:
+                LOG_LEVEL:
+                  required: false
+                  type: string
+            data_capture:
+              required: false
+              type: dict
+              schema:
+                mode:
+                  required: true
+                  type: string
+                percentage:
+                  required: true
+                  type: number
+            autoscaling:
+              required: false
+              type: dict
+              schema:
+                min_capacity:
+                  required: true
+                  type: number
+                max_capacity:
+                  required: true
+                  type: number
+                max_requests_per_minute_per_instance:
+                  required: true
+                  type: number
+                scale_in_cooldown_secs:
+                  required: true
+                  type: number
+                scale_out_cooldown_secs:
+                  required: true
+                  type: number
+        hom:
+          required: false
+          type: dict
+          schema:
+            enable_network_isolation:
+              required: false
+              type: boolean
+            instance_type:
+              required: false
+              type: string
+            inference_environment:
+              required: false
+              type: dict
+              schema:
+                LOG_LEVEL:
+                  required: false
+                  type: string
+            data_capture:
+              required: false
+              type: dict
+              schema:
+                mode:
+                  required: true
+                  type: string
+                percentage:
+                  required: true
+                  type: number
+            autoscaling:
+              required: false
+              type: dict
+              schema:
+                min_capacity:
+                  required: true
+                  type: number
+                max_capacity:
+                  required: true
+                  type: number
+                max_requests_per_minute_per_instance:
+                  required: true
+                  type: number
+                scale_in_cooldown_secs:
+                  required: true
+                  type: number
+                scale_out_cooldown_secs:
+                  required: true
+                  type: number
+        prod:
+          required: false
+          type: dict
+          schema:
+            enable_network_isolation:
+              required: false
+              type: boolean
+            instance_type:
+              required: false
+              type: string
+            inference_environment:
+              required: false
+              type: dict
+              schema:
+                LOG_LEVEL:
+                  required: false
+                  type: string
+            data_capture:
+              required: false
+              type: dict
+              schema:
+                mode:
+                  required: true
+                  type: string
+                percentage:
+                  required: true
+                  type: number
+            autoscaling:
+              required: false
+              type: dict
+              schema:
+                min_capacity:
+                  required: true
+                  type: number
+                max_capacity:
+                  required: true
+                  type: number
+                max_requests_per_minute_per_instance:
+                  required: true
+                  type: number
+                scale_in_cooldown_secs:
+                  required: true
+                  type: number
+                scale_out_cooldown_secs:
+                  required: true
+                  type: number
