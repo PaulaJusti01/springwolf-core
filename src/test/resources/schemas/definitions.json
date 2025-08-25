@@ -1,10 +1,13 @@
-import os
-from src.llms import Mistral
+import json
 
-def start():
-    model_path = os.getenv("MODEL_PATH", "artifacts/Mistral-7B-Instruct-v0.1")
-    model = Mistral(model_path=model_path, device="auto")
-    model.load_tokenizer()
-    model.load_model()
-    model.create_pipeline(max_output_length=128)
-    return model
+def predict(request, model):
+    data = json.loads(request.data.decode("utf-8"))["data"]
+    prediction = model.predict([data])
+    return str(prediction[0])
+
+def generate_response(request, model):
+    request_data = json.loads(request.data.decode("utf-8"))
+    question = request_data["question"]
+    template = f"Questão: {question}\nResposta:"
+    response = model.generate(template)
+    return response
