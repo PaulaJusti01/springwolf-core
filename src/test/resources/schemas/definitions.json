@@ -1,13 +1,24 @@
-import json
+from flask import Flask, Response, request
+from src.serving import start
+from src.prediction import predict, generate_response
 
-def predict(request, model):
-    data = json.loads(request.data.decode("utf-8"))["data"]
-    prediction = model.predict([data])
-    return str(prediction[0])
+app = Flask(__name__)
+model = start()
 
-def generate_response(request, model):
-    request_data = json.loads(request.data.decode("utf-8"))
-    question = request_data["question"]
-    template = f"Questão: {question}\nResposta:"
-    response = model.generate(template)
-    return response
+@app.route("/ping", methods=["GET"])
+def ping():
+    return Response(response="\n", status=200)
+
+@app.route("/invocations", methods=["POST"])
+def invocations():
+    try:
+        if "question" in request.get_json():
+            response = generate_response(request, model)
+        else:
+            response = predict(request, model)
+        return Response(response=response, status=200)
+    except Exception as e:
+        return Response(response=str(e), status=500)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
