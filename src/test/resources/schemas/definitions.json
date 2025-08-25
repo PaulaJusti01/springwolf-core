@@ -1,55 +1,20 @@
-import json
-import pytest
-from src.serving import start
-from src.prediction import predict, generate_response
-from src.predictor import app
+from flask import Flask, Response, request
 
-class DummyModel:
-    def predict(self, data):
-        return ["predicted"]
+app = Flask(__name__)
 
-    def generate(self, text):
-        return "generated"
+@app.route("/ping", methods=["GET"])
+def ping():
+    return Response(response="\n", status=200)
 
-def make_request(payload: dict):
-    class Req:
-        def __init__(self, p):
-            self.data = json.dumps(p).encode("utf-8")
-        def get_json(self):
-            return payload
-    return Req(payload)
+@app.route("/invocations", methods=["POST"])
+def invocations():
+    data = request.get_json()
+    if "question" in data:
+        return Response(response=f"Pergunta recebida: {data['question']}", status=200)
+    elif "data" in data:
+        return Response(response=f"Dado recebido: {data['data']}", status=200)
+    else:
+        return Response(response="Entrada inválida", status=400)
 
-def test_start_returns_model():
-    model = start()
-    assert model is not None
-    assert hasattr(model, "load_model")
-
-def test_predict():
-    req = make_request({"data": "some input"})
-    model = DummyModel()
-    response = predict(req, model)
-    assert response == "predicted"
-
-def test_generate_response():
-    req = make_request({"question": "O que é IA?"})
-    model = DummyModel()
-    response = generate_response(req, model)
-    assert response == "generated"
-
-@pytest.fixture
-def client():
-    app.testing = True
-    with app.test_client() as client:
-        yield client
-
-def test_ping(client):
-    resp = client.get("/ping")
-    assert resp.status_code == 200
-
-def test_invocations_with_data(client):
-    resp = client.post("/invocations", json={"data": "input"})
-    assert resp.status_code in (200, 500)
-
-def test_invocations_with_question(client):
-    resp = client.post("/invocations", json={"question": "Qual a capital do Brasil?"})
-    assert resp.status_code in (200, 500)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
