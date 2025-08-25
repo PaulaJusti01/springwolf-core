@@ -1,20 +1,23 @@
-import pytest
-from app import app
+FROM python:3.9-slim
 
-@pytest.fixture
-def client():
-    app.testing = True
-    with app.test_client() as client:
-        yield client
+# Diretório padrão do SageMaker
+WORKDIR /opt/program
 
-def test_ping(client):
-    resp = client.get("/ping")
-    assert resp.status_code == 200
+# Instala dependências
+COPY requirements.txt /opt/program/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-def test_invocations_with_question(client):
-    resp = client.post("/invocations", json={"question": "O que é IA?"})
-    assert resp.status_code == 200
+# Copia os códigos da aplicação
+COPY src/ /opt/program/src/
+COPY server/ /opt/program/server/
+COPY app.py /opt/program/app.py
 
-def test_invocations_with_data(client):
-    resp = client.post("/invocations", json={"data": "teste"})
-    assert resp.status_code == 200
+# Configurações de ambiente
+ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONIOENCODING=UTF-8
+
+# Porta exposta
+EXPOSE 8080
+
+# Inicia a API com gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
