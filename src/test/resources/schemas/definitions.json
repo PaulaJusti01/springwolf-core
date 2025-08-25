@@ -1,20 +1,20 @@
-from flask import Flask, Response, request
+import pytest
+from app import app
 
-app = Flask(__name__)
+@pytest.fixture
+def client():
+    app.testing = True
+    with app.test_client() as client:
+        yield client
 
-@app.route("/ping", methods=["GET"])
-def ping():
-    return Response(response="\n", status=200)
+def test_ping(client):
+    resp = client.get("/ping")
+    assert resp.status_code == 200
 
-@app.route("/invocations", methods=["POST"])
-def invocations():
-    data = request.get_json()
-    if "question" in data:
-        return Response(response=f"Pergunta recebida: {data['question']}", status=200)
-    elif "data" in data:
-        return Response(response=f"Dado recebido: {data['data']}", status=200)
-    else:
-        return Response(response="Entrada inválida", status=400)
+def test_invocations_with_question(client):
+    resp = client.post("/invocations", json={"question": "O que é IA?"})
+    assert resp.status_code == 200
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+def test_invocations_with_data(client):
+    resp = client.post("/invocations", json={"data": "teste"})
+    assert resp.status_code == 200
