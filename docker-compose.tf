@@ -1,189 +1,217 @@
-name: "2 - DEV - Build and Deploy"
+perfeito 🚀 segue o 2-read-config.yml limpinho, sem nenhum comentário:
+
+name: Read Config
+
+permissions:
+  id-token: write
+  contents: write
+  issues: write
+  checks: write
+  actions: write
+  packages: read
+  pull-requests: write
 
 on:
   workflow_call:
+    inputs:
+      build-environment:
+        required: true
+        type: string
+      branch:
+        required: false
+        type: string
+        default: ""
+    outputs:
+      build-working-directory:
+        value: ${{ jobs.read-config-data.outputs.build-working-directory }}
+      build-python-version:
+        value: ${{ jobs.read-config-data.outputs.build-python-version }}
+      build-architecture:
+        value: ${{ jobs.read-config-data.outputs.build-architecture }}
+      build-requirement-path:
+        value: ${{ jobs.read-config-data.outputs.build-requirement-path }}
+      build-docker-platform:
+        value: ${{ jobs.read-config-data.outputs.build-docker-platform }}
+      test-requirement-path:
+        value: ${{ jobs.read-config-data.outputs.test-requirement-path }}
+      test-disable:
+        value: ${{ jobs.read-config-data.outputs.test-disable }}
+      publish-deploy-only:
+        value: ${{ jobs.read-config-data.outputs.publish-deploy-only }}
+      publish-copy-all-dependency:
+        value: ${{ jobs.read-config-data.outputs.publish-copy-all-dependency }}
+      publish-install-dependency-path:
+        value: ${{ jobs.read-config-data.outputs.publish-install-dependency-path }}
+      publish-andromeda-repository:
+        value: ${{ jobs.read-config-data.outputs.publish-andromeda-repository }}
+      aws-account:
+        value: ${{ jobs.read-config-data.outputs.aws-account }}
+      aws-account-name:
+        value: ${{ jobs.read-config-data.outputs.aws-account-name }}
+      aws-region:
+        value: ${{ jobs.read-config-data.outputs.aws-region }}
+      sigla:
+        value: ${{ jobs.read-config-data.outputs.sigla }}
+      project-name:
+        value: ${{ jobs.read-config-data.outputs.project-name }}
+      pipeline-type:
+        value: ${{ jobs.read-config-data.outputs.pipeline-type }}
+      pipeline-version:
+        value: ${{ jobs.read-config-data.outputs.pipeline-version }}
+      destroy:
+        value: ${{ jobs.read-config-data.outputs.destroy }}
+      timestamp:
+        value: ${{ jobs.read-config-data.outputs.timestamp }}
+      model-name:
+        value: ${{ jobs.read-config-data.outputs.model-name }}
+      model-path:
+        value: ${{ jobs.read-config-data.outputs.model-path }}
+      lotus-s3-bucket:
+        value: ${{ jobs.read-config-data.outputs.lotus-s3-bucket }}
+      table-name:
+        value: ${{ jobs.read-config-data.outputs.table-name }}
+      spec-s3bucket:
+        value: ${{ jobs.read-config-data.outputs.spec-s3bucket }}
+      spec-db-source-name:
+        value: ${{ jobs.read-config-data.outputs.spec-db-source-name }}
+      spec-db-corp-name:
+        value: ${{ jobs.read-config-data.outputs.spec-db-corp-name }}
+      experiment-id:
+        value: ${{ jobs.read-config-data.outputs.experiment-id }}
+      id-mrm:
+        value: ${{ jobs.read-config-data.outputs.id-mrm }}
+      tech-team-email:
+        value: ${{ jobs.read-config-data.outputs.tech-team-email }}
 
 jobs:
-  read-config:
-    name: Read Config
-    uses: ./.github/workflows/2-read-config.yml
-    with:
-      build-environment: dev
-    secrets: inherit
+  read-config-data:
+    name: Read Config Data
+    runs-on: ${{ vars.RUNNER_K8S_OD_SMALL }}
 
-  download-artifacts:
-    name: Download Artifacts
-    uses: ./.github/workflows/2-download-artifacts.yml
-    needs:
-      - read-config
-    with:
-      environment: dev
-      aws-account: ${{ needs.read-config.outputs.aws-account }}
-      aws-region:  ${{ needs.read-config.outputs.aws-region }}
-      experiment-id: ${{ needs.read-config.outputs.experiment-id }}
-      model-name:   ${{ needs.read-config.outputs.model-name }}
-      model-path:   ${{ needs.read-config.outputs.model-path }}
-      s3-bucket:    ${{ needs.read-config.outputs.lotus-s3-bucket }}
-      table-name:   ${{ needs.read-config.outputs.table-name }}
-      destroy:      ${{ needs.read-config.outputs.destroy }}
-    secrets: inherit
+    outputs:
+      build-working-directory: ${{ steps.compute-working-dirs.outputs.build_working_directory }}
+      build-python-version:    ${{ steps.parse-iupipes.outputs.build-python-version }}
+      build-architecture:      ${{ steps.parse-iupipes.outputs.build-architecture }}
+      build-requirement-path:  ${{ steps.parse-iupipes.outputs.build-requirement-path }}
+      build-docker-platform:   ${{ steps.parse-iupipes.outputs.build-docker-platform }}
+      test-requirement-path:   ${{ steps.parse-iupipes.outputs.test-requirement-path }}
+      test-disable:            ${{ steps.parse-iupipes.outputs.test-disable }}
+      publish-deploy-only:     ${{ steps.parse-iupipes.outputs.publish-deploy-only }}
+      publish-copy-all-dependency:     ${{ steps.parse-iupipes.outputs.publish-copy-all-dependency }}
+      publish-install-dependency-path: ${{ steps.parse-iupipes.outputs.publish-install-dependency-path }}
+      publish-andromeda-repository:    ${{ steps.parse-iupipes.outputs.publish-andromeda-repository }}
+      aws-account:       ${{ steps.parse-config.outputs.info-aws_account_number-${{ inputs.build-environment }} }}
+      aws-account-name:  ${{ steps.parse-config.outputs.info-aws_account-name }}
+      aws-region:        ${{ steps.parse-config.outputs.info-aws_region }}
+      sigla:             ${{ steps.parse-config.outputs.itau-sigla }}
+      project-name:      ${{ steps.repo-info.outputs.application_name }}
+      pipeline-type:     ${{ steps.parse-config.outputs.pipeline_type }}
+      pipeline-version:  ${{ steps.repo-info.outputs.version }}
+      destroy:           ${{ steps.parse-config.outputs.infra-terraform-destroy }}
+      timestamp:         ${{ steps.get-timestamp.outputs.timestamp }}
+      model-name:        model.tar.gz
+      model-path:        ${{ steps.parse-config.outputs.model-path }}
+      lotus-s3-bucket:   ${{ steps.set-lotus-s3-bucket.outputs.lotus-s3-bucket }}
+      table-name:        ${{ steps.repo-info.outputs.table_name }}
+      spec-s3bucket:     ${{ steps.set-lotus-s3-bucket.outputs.spec-s3bucket }}
+      spec-db-source-name: ${{ steps.set-lotus-s3-bucket.outputs.spec-db-source-name }}
+      spec-db-corp-name:   ${{ steps.set-lotus-s3-bucket.outputs.spec-db-corp-name }}
+      experiment-id:     ${{ steps.parse-config.outputs.parameters-experiment_id }}
+      id-mrm:            ${{ steps.parse-config.outputs.parameters-id_mrm }}
+      tech-team-email:   ${{ steps.parse-config.outputs.info-tech_team_email }}
 
-  build-dependencies:
-    name: Build Dependencies
-    uses: ./.github/workflows/2-build-dependencies.yml
-    needs:
-      - read-config
-      - download-artifacts
-    with:
-      condominio: devops
-      environment: dev
-      build-environment: dev
-      sigla:        ${{ needs.read-config.outputs.sigla }}
-      model-name:   ${{ needs.read-config.outputs.model-name }}
-      aws-region:   ${{ needs.read-config.outputs.aws-region }}
-      s3-bucket:    ${{ needs.read-config.outputs.lotus-s3-bucket }}
-      model-path:   ${{ needs.read-config.outputs.model-path }}
-      project-name: ${{ needs.read-config.outputs.project-name }}
-      spec-s3bucket:      ${{ needs.read-config.outputs.spec-s3bucket }}
-      aws-account:        ${{ needs.read-config.outputs.aws-account }}
-      spec-db-source-name:${{ needs.read-config.outputs.spec-db-source-name }}
-      spec-db-corp-name:  ${{ needs.read-config.outputs.spec-db-corp-name }}
-      table-name:         ${{ needs.read-config.outputs.table-name }}
-      target-delay-days:        ${{ needs.download-artifacts.outputs.target_delay_days }}
-      should-run-performance-drift: ${{ needs.download-artifacts.outputs.should_run_performance_drift }}
-    secrets: inherit
+    steps:
+      - name: Get timestamp
+        id: get-timestamp
+        shell: bash
+        run: |
+          echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
-  ci-python:
-    uses: itau-corp/itau-up2-reusable-workflows-ci-python/.github/workflows/ci.yml@v2
-    needs: read-config
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.read-config.outputs.build-working-directory) }}
-    with:
-      build-working-directory:   ${{ matrix.app }}
-      build-python-version:      ${{ needs.read-config.outputs.build-python-version }}
-      build-architecture:        ${{ needs.read-config.outputs.build-architecture }}
-      build-requirement-path:    ${{ needs.read-config.outputs.build-requirement-path }}
-      test-working-directory:    ${{ matrix.app }}
-      test-requirement-path:     ${{ needs.read-config.outputs.test-requirement-path }}
-      test-disable:              ${{ needs.read-config.outputs.test-disable }}
-      publish-deploy-only:       ${{ needs.read-config.outputs.publish-deploy-only }}
-      publish-copy-all-dependency: ${{ needs.read-config.outputs.publish-copy-all-dependency }}
-      publish-install-dependency-path: ${{ needs.read-config.outputs.publish-install-dependency-path }}
-      iupipes-config-path: ".iupipes.yml"
-    secrets: inherit
+      - name: Get secrets from AWS Secrets Manager
+        id: get-secrets
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/aws-actions/up2-secretsmanager-get-secrets@v1
+        with:
+          secret-ids: |
+            ,GH/UP2/ARTIFACTORY
+            ,GH/UP2/APP/IUPIPES-APP-CI
+          parse-json-secrets: true
 
-  upload-package:
-    uses: itau-corp/itau-up2-reusable-workflows-cd-publish-artifact/.github/workflows/generic.yml@v3
-    needs:
-      - read-config
-      - ci-python
-      - build-dependencies
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.read-config.outputs.build-working-directory) }}
-    with:
-      promote-environment: dev
-      publish-package: true
-      build-working-directory: ${{ matrix.app }}
-    secrets: inherit
+      - name: Get Token
+        id: get-workflow-token
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/peter-murray/workflow-application-token-action@v1
+        with:
+          application_id:     ${{ env.APP_ID }}
+          application_private_key: ${{ env.PRIVATE_KEY }}
 
-  publish-docker:
-    uses: itau-corp/itau-up2-reusable-workflows-ci-container/.github/workflows/build.yml@v3
-    needs:
-      - upload-package
-      - read-config
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.read-config.outputs.build-working-directory) }}
-    with:
-      promote-environment: dev
-      publish-package: true
-      disable-download-package: false
-      build-working-directory: ${{ matrix.app }}
-      publish-ecr: true
-      publish-artifactory: true
-      andromeda-repository: ${{ needs.read-config.outputs.publish-andromeda-repository }}
-      deploy-aws-dev-account: ${{ needs.read-config.outputs.aws-account }}
-      deploy-aws-hom-account: ${{ needs.read-config.outputs.aws-account }}
-      deploy-aws-prod-account: ${{ needs.read-config.outputs.aws-account }}
-      deploy-aws-region: ${{ needs.read-config.outputs.aws-region }}
-      publish-out-path: ${{ github.run_id }}-${{ github.run_attempt }}
-      build-docker-platform: ${{ needs.read-config.outputs.build-docker-platform }}
-    secrets: inherit
+      - name: Checkout User Repo
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/actions/checkout@v1
+        with:
+          path: ./repo_user
+          ref: ${{ inputs.branch != '' && inputs.branch || github.ref_name }}
 
-  infra-terraform:
-    uses: itau-corp/itau-up2-reusable-workflows-infra-terraform/.github/workflows/build.yml@v2
-    needs:
-      - upload-package
-      - read-config
-      - publish-docker
-    with:
-      environment: dev
-      deploy-aws-dev-account: ${{ needs.read-config.outputs.aws-account }}
-      deploy-aws-dev-region:  ${{ needs.read-config.outputs.aws-region }}
-      infra-terraform-working-directory: infra
-      abstract-artifact: false
-      infra-terraform-destroy: ${{ needs.read-config.outputs.destroy }}
-      infra-terraform-custom-var-flag: "-var-file=inventories/dev/terraform.tfvars -var=sagemaker_image_tag=${{ needs.publish-docker.outputs.artifactversion }}"
-      iupipes-config-path: "config.yml"
-    secrets: inherit
+      - name: Config parser
+        id: parse-config
+        uses: itau-corp/itau-up2-action-config-parse@v1
+        with:
+          configPath: repo_user/config.yml
+          reusableInputs: ${{ toJSON(inputs) }}
 
-  deploy-infra-terraform:
-    uses: itau-corp/itau-up2-reusable-workflows-infra-terraform/.github/workflows/build.yml@v2
-    needs:
-      - infra-terraform
-      - upload-package
-      - read-config
-    with:
-      environment: dev
-      execution-mode: apply
-      application-publish: false
-      deploy-aws-dev-account: ${{ needs.read-config.outputs.aws-account }}
-      deploy-aws-dev-region:  ${{ needs.read-config.outputs.aws-region }}
-      abstract-artifact: false
-      infra-terraform-working-directory: infra
-      infra-terraform-custom-var-flag: "-var-file=inventories/dev/terraform.tfvars -var=sagemaker_image_tag=${{ needs.publish-docker.outputs.artifactversion }}"
-      iupipes-config-path: "config.yml"
-    secrets: inherit
+      - name: Parse .iupipes.yml
+        id: parse-iupipes
+        uses: itau-corp/itau-mr7-action-lotus/.github/actions/parse-yaml-to-json@v1.2.0
+        with:
+          path: repo_user/.iupipes.yml
+          key: ""
 
-  taac-dev:
-    uses: itau-corp/itau-pg8-reusable-workflows-test-taac/.github/workflows/taac-dev.yml@v1
-    needs:
-      - read-config
-    with:
-      environment: dev
-    secrets: inherit
+      - name: Compute Working Dirs
+        id: compute-working-dirs
+        shell: bash
+        run: |
+          JSON_APPS='${{ steps.parse-iupipes.outputs.build-working-directory }}'
+          if [ -z "$JSON_APPS" ] || [ "$JSON_APPS" = "null" ]; then
+            JSON_APPS='["app"]'
+          fi
+          echo "build_working_directory=$JSON_APPS" >> "$GITHUB_OUTPUT"
 
-  open-pr-to-release-branch:
-    needs:
-      - deploy-infra-terraform
-      - upload-package
-    uses: itau-corp/itau-up2-reusable-workflows-common-pull-request/.github/workflows/create.yml@v2
-    with:
-      origin-branch: develop
-      target-create-branch: true
-      target-base-branch: main
-      target-branch: release/${{ needs.upload-package.outputs.artifact-version }}
-    secrets: inherit
+      - name: Get Repo Info
+        id: repo-info
+        shell: bash
+        run: |
+          sigla='${{ steps.parse-config.outputs.itau-sigla }}'
+          echo "sigla=$sigla" >> "$GITHUB_OUTPUT"
 
-  post-deploy:
-    needs:
-      - deploy-infra-terraform
-      - read-config
-    uses: ./.github/workflows/2-post-deploy.yml
-    with:
-      environment: "dev"
-      aws-account:      ${{ needs.read-config.outputs.aws-account }}
-      aws-account-name: ${{ needs.read-config.outputs.aws-account-name }}
-      aws-region:       ${{ needs.read-config.outputs.aws-region }}
-      destroy:          ${{ needs.read-config.outputs.destroy }}
-      email:            ${{ needs.read-config.outputs.tech-team-email }}
-      pipeline-type:    ${{ needs.read-config.outputs.pipeline-type }}
-      pipeline-version: ${{ needs.read-config.outputs.pipeline-version }}
-      project-name:     ${{ needs.read-config.outputs.project-name }}
-      status:           ${{ needs.deploy-infra-terraform.result }}
-      timestamp:        ${{ needs.read-config.outputs.timestamp }}
-      experiment-id:    ${{ needs.read-config.outputs.experiment-id }}
-      mrm-id:           ${{ needs.read-config.outputs.id-mrm }}
-    secrets: inherit
+          application_name='${{ steps.parse-config.outputs.application_name }}'
+          application_name=$(echo "$application_name" | sed -E 's/\.infra|-\.app//g' | tr '[:upper:]' '[:lower:]')
+          echo "application_name=$application_name" >> "$GITHUB_OUTPUT"
+
+          table_name="tblotus_${application_name}"
+          echo "table_name=$table_name" >> "$GITHUB_OUTPUT"
+
+          echo "version=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set lotus-s3-bucket
+        id: set-lotus-s3-bucket
+        shell: bash
+        run: |
+          env="${{ inputs.build-environment }}"
+
+          if [ "$env" = "analytics" ]; then
+            echo "lotus-s3-bucket=itau-sel-wkp-sa-east-1-${{ steps.parse-config.outputs.info-aws_account-number-analytics }}" >> "$GITHUB_OUTPUT"
+            echo "aws-account=${{ steps.parse-config.outputs.info-aws_account-number-analytics }}" >> "$GITHUB_OUTPUT"
+          elif [ "$env" = "dev" ]; then
+            echo "lotus-s3-bucket=itau-sel-wkp-sa-east-1-${{ steps.parse-config.outputs.info-aws_account-number-dev }}" >> "$GITHUB_OUTPUT"
+            echo "aws-account=${{ steps.parse-config.outputs.info-aws_account-number-dev }}" >> "$GITHUB_OUTPUT"
+          elif [ "$env" = "hom" ]; then
+            echo "lotus-s3-bucket=itau-sel-wkp-sa-east-1-${{ steps.parse-config.outputs.info-aws_account-number-hom }}" >> "$GITHUB_OUTPUT"
+            echo "aws-account=${{ steps.parse-config.outputs.info-aws_account-number-hom }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "lotus-s3-bucket=itau-sel-wkp-sa-east-1-${{ steps.parse-config.outputs.info-aws_account-number-prod }}" >> "$GITHUB_OUTPUT"
+            echo "aws-account=${{ steps.parse-config.outputs.info-aws_account-number-prod }}" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "spec-s3bucket=${{ steps.parse-config.outputs.spec-s3bucket }}" >> "$GITHUB_OUTPUT"
+          echo "spec-db-source-name=${{ steps.parse-config.outputs.spec-db-source-name }}" >> "$GITHUB_OUTPUT"
+          echo "spec-db-corp-name=${{ steps.parse-config.outputs.spec-db-corp-name }}" >> "$GITHUB_OUTPUT"
+
+quer que eu faça a mesma limpeza (sem comentários, identação uniforme) também no post-deploy e mrm-validation?
+
