@@ -1,4 +1,4 @@
-name: Download Artifacts
+name: Post Deploy
 
 permissions:
   id-token: write
@@ -12,56 +12,56 @@ permissions:
 on:
   workflow_call:
     inputs:
-      build-environment:
+      environment:
         required: true
         type: string
       aws-account:
         required: true
         type: string
+      aws-account-name:
+        required: true
+        type: string
       aws-region:
-        required: false
-        type: string
-        default: sa-east-1
-      environment:
-        required: true
-        type: string
-      experiment-id:
-        required: true
-        type: string
-      model-name:
-        required: true
-        type: string
-      model-path:
-        required: true
-        type: string
-      s3-bucket:
         required: true
         type: string
       destroy:
+        required: true
+        type: string
+      email:
+        required: true
+        type: string
+      pipeline-type:
+        required: true
+        type: string
+      pipeline-version:
+        required: true
+        type: string
+      project-name:
+        required: true
+        type: string
+      status:
+        required: true
+        type: string
+      timestamp:
+        required: true
+        type: string
+      experiment-id:
         required: false
         type: string
-        default: "false"
-      table-name:
+        default: ""
+      mrm-id:
         required: false
         type: string
+        default: ""
       runs-on:
         required: false
         type: string
         default: ${{ vars.RUNNER_K8S_OD_SMALL }}
-    outputs:
-      target_delay_days:
-        value: ${{ jobs.download-artifacts.outputs.target_delay_days }}
-      should_run_performance_drift:
-        value: ${{ jobs.download-artifacts.outputs.should_run_performance_drift }}
 
 jobs:
-  download-artifacts:
+  post-deploy:
     runs-on: ${{ inputs.runs-on }}
     environment: ${{ inputs.environment }}
-    name: Download Artifacts
-    outputs:
-      target_delay_days: ${{ steps.download.outputs.target_delay_days }}
-      should_run_performance_drift: ${{ steps.download.outputs.should_run_performance_drift }}
     steps:
       - name: Get secrets from AWS Secrets Manager
         id: get-secrets
@@ -81,29 +81,30 @@ jobs:
 
       - name: Role Info
         run: |
-          export REPO_ID=$(curl -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }} | jq -r .id)
+          export REPO_ID=$(curl -H "Authorization:token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${GITHUB_REPOSITORY} | jq -r '.id')
           echo "ROLE_NAME=itau-github-repo-${REPO_ID}" >> $GITHUB_ENV
 
-      - name: Checkout user repository
-        uses: itau-corp/itau-up2-action-external-management/.github/actions/actions/checkout@v1
-
       - name: Assume Role
-        uses: itau-corp/itau-up2-action-external-management/.github/actions/aws-actions/configure-aws-credentials@v1
+        uses: itau-corp/itau-up2-action-external-management/.github/actions/aws-actions/configure-aws-credentials-role@v1
         with:
           role-to-assume: arn:aws:iam::${{ inputs.aws-account }}:role/${{ env.ROLE_NAME }}
           aws-region: ${{ inputs.aws-region }}
           role-skip-session-tagging: true
           role-duration-seconds: 1800
 
-      - name: Download and Upload Artifacts
-        id: download
-        if: ${{ inputs.destroy == 'false' || inputs.destroy == false }}
-        uses: itau-corp/itau-mr7-action-lotus/.github/actions/download-artifacts@v1.2.0
+      - name: Post Deploy
+        uses: itau-corp/itau-mr7-action-lotus/.github/actions/post-deploy@v1.2.0
         with:
-          experiment-id: ${{ inputs.experiment-id }}
-          s3-bucket: ${{ inputs.s3-bucket }}
-          model-path: ${{ inputs.model-path }}
-          model-name: ${{ inputs.model-name }}
-          environment: ${{ inputs.environment }}
-          build-environment: ${{ inputs.build-environment }}
-          table-name: ${{ inputs.table-name }}
+          environment:        ${{ inputs.environment }}
+          aws-account:        ${{ inputs.aws-account }}
+          aws-account-name:   ${{ inputs.aws-account-name }}
+          aws-region:         ${{ inputs.aws-region }}
+          destroy:            ${{ inputs.destroy }}
+          email:              ${{ inputs.email }}
+          pipeline-type:      ${{ inputs.pipeline-type }}
+          pipeline-version:   ${{ inputs.pipeline-version }}
+          project-name:       ${{ inputs.project-name }}
+          status:             ${{ inputs.status }}
+          timestamp:          ${{ inputs.timestamp }}
+          experiment-id:      ${{ inputs.experiment-id }}
+          mrm-id:             ${{ inputs.mrm-id }}
