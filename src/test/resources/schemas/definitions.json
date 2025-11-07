@@ -1,46 +1,22 @@
-FROM docker-remotes.artifactory.prod.aws.cloud.ihf/ubuntu:20.04
-
-# Copia dependências
-COPY server/pip.conf /etc/conf/pip.conf
-COPY requirements.txt /tmp/requirements.txt
-COPY sys-requirements.txt /tmp/sys-requirements.txt
-
-RUN apt update && \
-    apt upgrade -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata && \
-    apt install -y --no-install-recommends $(cat /tmp/sys-requirements.txt) && \
-    apt clean && rm -rf /var/lib/apt/lists/*
-
-# Instala Python (igual antes)
-RUN wget https://www.python.org/ftp/python/3.8.13/Python-3.8.13.tgz -P /opt && \
-    cd /opt && tar xzf Python-3.8.13.tgz && \
-    cd Python-3.8.13 && ./configure --enable-optimizations && make altinstall
-
-RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.8 2 && \
-    update-alternatives --install /usr/bin/pip pip /usr/local/bin/pip3.8 2
-
-# Variáveis de ambiente
-ENV PATH=$HOME/.local/bin:$PATH
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONIOENCODING=UTF-8
-ENV PIP_NO_CACHE_DIR=off
-ENV PIP_CONFIG_FILE=/etc/conf/pip.conf
-
-# Diretório padrão do SageMaker
-WORKDIR /opt/program
-
-# Instala dependências Python
-RUN pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt
-
-# Copia os arquivos da aplicação
-COPY artifacts/ $MODEL_PATH
-COPY server/ /opt/program/server/
-COPY src/ /opt/program/src/
-COPY app.py /opt/program/app.py   # <<<<< alterado para usar app.py
-
-# SageMaker espera rodar na porta 8080
-EXPOSE 8080
-
-# Executa com gunicorn em vez de "serve"
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowInvokeSpecificLambdaFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction",
+        "lambda:InvokeAsync"
+      ],
+      "Resource": [
+        "arn:aws:lambda:sa-east-1:868263955460:function:lotus-*"
+      ]
+    },
+    {
+      "Sid": "AllowInvokeSpecificSageMakerEndpoint",
+      "Effect": "Allow",
+      "Action": "sagemaker:InvokeEndpoint",
+      "Resource": "arn:aws:sagemaker:sa-east-1:868263955460:endpoint/iulotus-teste-realtime"
+    }
+  ]
+}
