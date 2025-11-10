@@ -9,14 +9,21 @@ def ping():
 @app.route("/invocations", methods=["POST"])
 def invocations():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return Response(response="JSON inválido ou vazio", status=400)
 
-        if "instances" in data:
-            instance = data["instances"][0]
-            if isinstance(instance, dict) and "question" in instance:
-                msg = instance["question"]
-                return Response(response=f"Pergunta recebida: {msg}", status=200)
-            return Response(response=f"Dado recebido: {instance}", status=200)
+        if isinstance(data, dict) and "instances" in data:
+            instances = data["instances"]
+            if isinstance(instances, list) and len(instances) > 0:
+                instance = instances[0]
+                if isinstance(instance, dict) and "question" in instance:
+                    msg = instance["question"]
+                    return Response(response=f"Pergunta recebida: {msg}", status=200)
+                else:
+                    return Response(response=f"Dado recebido: {instance}", status=200)
+            else:
+                return Response(response="Lista de instances vazia ou inválida", status=400)
 
         elif "question" in data:
             return Response(response=f"Pergunta recebida: {data['question']}", status=200)
@@ -28,6 +35,7 @@ def invocations():
             return Response(response="Entrada inválida", status=400)
 
     except Exception as e:
+        print(f"Erro interno: {str(e)}")
         return Response(response=f"Erro interno: {str(e)}", status=500)
 
 if __name__ == "__main__":
