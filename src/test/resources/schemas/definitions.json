@@ -1,33 +1,5 @@
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-
-# Recria o DataFrame do zero (garante que está tudo certo)
-np.random.seed(42)
-df = pd.DataFrame({
-    'sexo': np.random.choice(['Feminino', 'Masculino'], size=100),
-    'cidade': np.random.choice(['São Paulo', 'Rio de Janeiro', 'Curitiba'], size=100),
-    'idade': np.random.randint(18, 65, size=100),
-    'renda': np.random.uniform(1500, 10000, size=100),
-    'target': np.random.choice([0, 1], size=100)
-})
-
-# Divide o dataset
-df_train, df_test = train_test_split(df, random_state=0, test_size=0.2)
-
-# Garante que os índices comecem do zero em tudo
-df_train = df_train.reset_index(drop=True)
-df_test = df_test.reset_index(drop=True)
-
-# Separa X e y
-X_train = df_train.drop(['target'], axis=1)
-y_train = df_train['target'].astype('float64')
-
-X_test = df_test.drop(['target'], axis=1)
-y_test = df_test['target'].astype('float64')
-
-# Reseta os índices novamente (extra segurança)
-X_train = X_train.reset_index(drop=True)
-y_train = y_train.reset_index(drop=True)
-X_test = X_test.reset_index(drop=True)
-y_test = y_test.reset_index(drop=True)
+# Garantir alinhamento 100% idêntico
+X_train.index = range(len(X_train))
+y_train.index = range(len(y_train))
+X_test.index = range(len(X_test))
+y_test.index = range(len(y_test))
