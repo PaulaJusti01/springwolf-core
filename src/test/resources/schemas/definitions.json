@@ -1,5 +1,17 @@
-# Garantir alinhamento 100% idêntico
-X_train.index = range(len(X_train))
-y_train.index = range(len(y_train))
-X_test.index = range(len(X_test))
-y_test.index = range(len(y_test))
+# Converter para numpy e garantir que tudo é float
+X_train_np = X_train.to_numpy().astype(float)
+y_train_np = y_train.to_numpy().astype(float)
+X_test_np = X_test.to_numpy().astype(float)
+y_test_np = y_test.to_numpy().astype(float)
+
+# Agora treina o modelo
+pipeline = lotus.train_model(
+    project_id,
+    "simple_xgboost_clf",
+    X_train_np,
+    y_train_np,
+    X_test_np,
+    y_test_np,
+    max_evals=2,
+    verbose=False
+)
