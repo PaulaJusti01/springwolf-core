@@ -1,70 +1,8 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import json
-import traceback
-
-class InferenceHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == "/ping":
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"\n")
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    def do_POST(self):
-        try:
-            if self.path != "/invocations":
-                self.send_response(404)
-                self.end_headers()
-                return
-
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length).decode("utf-8")
-
-            try:
-                data = json.loads(body)
-            except json.JSONDecodeError:
-                self._send_response(400, "JSON inválido ou malformado")
-                return
-
-            if not isinstance(data, dict) or "instances" not in data:
-                self._send_response(400, "Corpo deve conter a chave 'instances'")
-                return
-
-            instances = data["instances"]
-
-            if not isinstance(instances, list) or len(instances) == 0:
-                self._send_response(400, "Lista de 'instances' vazia ou inválida")
-                return
-
-            instance = instances[0]
-            if not isinstance(instance, dict):
-                self._send_response(400, "Formato de 'instances' inválido")
-                return
-
-            msg = instance.get("question", "")
-            print(f"DEBUG - Pergunta recebida: {msg}")
-
-            response = f"Pergunta recebida: {msg}"
-            self._send_response(200, response)
-
-        except Exception as e:
-            print("ERRO INTERNO:", traceback.format_exc())
-            self._send_response(500, f"Erro interno: {str(e)}")
-
-    def _send_response(self, code, message):
-        self.send_response(code)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        self.wfile.write(message.encode("utf-8"))
-
-def run():
-    host = "0.0.0.0"
-    port = 8080
-    print(f"Servidor iniciado em http://{host}:{port}")
-    server = HTTPServer((host, port), InferenceHandler)
-    server.serve_forever()
-
-if __name__ == "__main__":
-    run()
+{
+  "authorization": "Bearer 123456",
+  "xItauApikey": "123456absdc",
+  "xItauCorrelationID": "111-22222-333-444",
+  "xAzimAuthorizationID": "123456",
+  "Accept": "application/json",
+  "Content-Type": "application/json"
+}
