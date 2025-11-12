@@ -1,5 +1,6 @@
 from flask import Flask, Response, request
 import json
+import traceback
 
 app = Flask(__name__)
 
@@ -10,67 +11,38 @@ def ping():
 @app.route("/invocations", methods=["POST"])
 def invocations():
     try:
-        # Lê o JSON da requisição
-        data = request.get_json(force=True, silent=True) or {}
+        raw_data = request.data.decode("utf-8")
+        data = json.loads(raw_data)
+        print(f"DEBUG - Dados recebidos: {data}")
 
         if not data:
             return Response(response="JSON inválido ou vazio", status=400)
 
-        # 🔹 Normaliza formatos possíveis:
-        #   - {"instances": [...]}
-        #   - {"input-data": {"instances": [...]}}
-        #   - {"question": "..."}
-        #   - {"data": "..."}
-        payload = data
+        payload = data.get("input-data", data)
 
-        if "input-data" in data and isinstance(data["input-data"], dict):
-            payload = data["input-data"]
-
-        # 🔹 Trata formato com "instances"
         if isinstance(payload, dict) and "instances" in payload:
             instances = payload["instances"]
-
             if isinstance(instances, list) and len(instances) > 0:
                 instance = instances[0]
-
                 if isinstance(instance, dict):
-                    if "question" in instance:
-                        msg = instance["question"]
-                        return Response(
-                            response=f"Pergunta recebida: {msg}", status=200
-                        )
-                    else:
-                        return Response(
-                            response=f"Dado recebido: {json.dumps(instance)}",
-                            status=200,
-                        )
+                    msg = instance.get("question", "")
+                    return Response(response=f"Pergunta recebida: {msg}", status=200)
                 else:
-                    return Response(
-                        response="Formato inválido em instances", status=400
-                    )
+                    return Response(response=f"Instance inválida: {instance}", status=400)
             else:
-                return Response(
-                    response="Lista de instances vazia ou inválida", status=400
-                )
+                return Response(response="Lista de instances vazia ou inválida", status=400)
 
-        # 🔹 Trata formato simples
         elif "question" in payload:
-            return Response(
-                response=f"Pergunta recebida: {payload['question']}", status=200
-            )
+            return Response(response=f"Pergunta recebida: {payload['question']}", status=200)
 
         elif "data" in payload:
-            return Response(
-                response=f"Dado recebido: {payload['data']}", status=200
-            )
+            return Response(response=f"Dado recebido: {payload['data']}", status=200)
 
-        else:
-            return Response(response="Entrada inválida", status=400)
+        return Response(response=f"Formato inesperado: {payload}", status=400)
 
     except Exception as e:
-        print(f"Erro interno: {str(e)}")
+        print("ERRO INTERNO NO APP:", traceback.format_exc())
         return Response(response=f"Erro interno: {str(e)}", status=500)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
