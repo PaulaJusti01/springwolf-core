@@ -1,17 +1,76 @@
-# Converter para numpy e garantir que tudo é float
-X_train_np = X_train.to_numpy().astype(float)
-y_train_np = y_train.to_numpy().astype(float)
-X_test_np = X_test.to_numpy().astype(float)
-y_test_np = y_test.to_numpy().astype(float)
+from flask import Flask, Response, request
+import json
 
-# Agora treina o modelo
-pipeline = lotus.train_model(
-    project_id,
-    "simple_xgboost_clf",
-    X_train_np,
-    y_train_np,
-    X_test_np,
-    y_test_np,
-    max_evals=2,
-    verbose=False
-)
+app = Flask(__name__)
+
+@app.route("/ping", methods=["GET"])
+def ping():
+    return Response(response="\n", status=200)
+
+@app.route("/invocations", methods=["POST"])
+def invocations():
+    try:
+        # Lê o JSON da requisição
+        data = request.get_json(force=True, silent=True) or {}
+
+        if not data:
+            return Response(response="JSON inválido ou vazio", status=400)
+
+        # 🔹 Normaliza formatos possíveis:
+        #   - {"instances": [...]}
+        #   - {"input-data": {"instances": [...]}}
+        #   - {"question": "..."}
+        #   - {"data": "..."}
+        payload = data
+
+        if "input-data" in data and isinstance(data["input-data"], dict):
+            payload = data["input-data"]
+
+        # 🔹 Trata formato com "instances"
+        if isinstance(payload, dict) and "instances" in payload:
+            instances = payload["instances"]
+
+            if isinstance(instances, list) and len(instances) > 0:
+                instance = instances[0]
+
+                if isinstance(instance, dict):
+                    if "question" in instance:
+                        msg = instance["question"]
+                        return Response(
+                            response=f"Pergunta recebida: {msg}", status=200
+                        )
+                    else:
+                        return Response(
+                            response=f"Dado recebido: {json.dumps(instance)}",
+                            status=200,
+                        )
+                else:
+                    return Response(
+                        response="Formato inválido em instances", status=400
+                    )
+            else:
+                return Response(
+                    response="Lista de instances vazia ou inválida", status=400
+                )
+
+        # 🔹 Trata formato simples
+        elif "question" in payload:
+            return Response(
+                response=f"Pergunta recebida: {payload['question']}", status=200
+            )
+
+        elif "data" in payload:
+            return Response(
+                response=f"Dado recebido: {payload['data']}", status=200
+            )
+
+        else:
+            return Response(response="Entrada inválida", status=400)
+
+    except Exception as e:
+        print(f"Erro interno: {str(e)}")
+        return Response(response=f"Erro interno: {str(e)}", status=500)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
