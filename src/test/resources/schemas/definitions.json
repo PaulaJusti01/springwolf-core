@@ -1,81 +1,18 @@
-Estou enfrentando um erro 500 ao tentar chamar o endpoint do API Gateway que integra com o SageMaker Realtime Endpoint do meu projeto iulotusrealtime.
-
-Comportamento atual
-
-A chamada pelo Gateway retorna 500 Internal Server Error.
-
-No CloudWatch do API Gateway, o body é repassado corretamente:
-
 {
   "instances": [
     {
-      "question": "teste mensagem"
+      "question": "teste mensagem",
+      
+      "col0": 0.0186239108,
+      "col1": 0.9423756449,
+      "col2": 0.3432624259,
+      "col3": 0.6790364109,
+      "col4": 0.065697003,
+      "col5": 0.7782610646,
+      "col6": 0.4102710028,
+      "col7": 0.276891474,
+      "col8": 0.0575142003,
+      "col9": 0.3591511435
     }
   ]
 }
-
-Os headers obrigatórios também seguem corretos.
-
-Mas no log do container do SageMaker aparece um erro de JSON:
-
-JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
-
-O erro ocorre antes mesmo da lógica do meu app rodar, e os meus prints não aparecem no log.
-
-
-O que isso indica
-
-O SageMaker está recebendo o body com formato inválido, diferente do JSON que aparece no log do Gateway.
-
-Isso significa que algo entre: API Gateway → Proxy Integration → NGINX/Gunicorn → Meu app está reescrevendo ou corrompendo o corpo da requisição.
-
-Pode ser causado por:
-
-Rota incorreta (/invocations, /realtime-sagemaker-predictions etc)
-
-Conteúdo chegando como string não JSON (ex.: '{' instances: ... }')
-
-Problema no NGINX + Gunicorn do container padrão do Lotus
-
-O serve (bootloader do container) estar apontando para o arquivo errado
-
-Ou o container estar esperando um formato diferente do contrato do Gateway
-
-
-
-O que já confirmei
-
-A Lambda consegue chamar o endpoint do SageMaker sem erro → o modelo funciona.
-
-O erro só ocorre quando a requisição passa pelo API Gateway.
-
-Já removi Flask e reescrevi o app em HTTP puro.
-
-Os prints do meu app não aparecem no log, sugerindo que:
-
-O request está falhando antes de chegar no meu código, ou
-
-O serve não está entregando o body corretamente ao meu app.
-
-
-
-Caminho da requisição onde o erro acontece
-
-API Gateway → integração HTTP → NGINX (container Lotus) → Gunicorn → app.py
-
-Solicitação
-
-Preciso de suporte para identificar por que o JSON chega corrompido/ilegível no container, mesmo quando o Gateway mostra o body correto.
-
-Especificamente, preciso ajuda em:
-
-1. Validar se a integração do API Gateway está preservando o corpo original (sem transformação).
-
-
-2. Validar se o container do Lotus está configurado para aceitar JSON bruto na rota /invocations.
-
-
-3. Confirmar se o NGINX + Gunicorn do template Lotus está interferindo no content-type ou no raw body.
-
-
-4. Confirmar se o serve e o wsgi estão carregando o app correto.
