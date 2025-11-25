@@ -1,40 +1,16 @@
-def get_tags(flavor_params: Dict) -> str:
-    """
-    Lê as tags de dentro do flavor_params e monta:
-      - Plataforma (fixa: iulotus)
-      - Experiment_id  (vem do flavor_params)
-      - Model_name     (vem do flavor_params)
-      - + quaisquer outras tags já configuradas lá
-    """
+:::warning Atenção!
 
-    # 👉 aqui eu assumo uma estrutura assim:
-    # flavor_params = {
-    #   "experiment_id": "exp-123",
-    #   "model_name": "meu-modelo",
-    #   "tags": [
-    #       {"key": "Owner", "value": "Time X"},
-    #       {"key": "Squad", "value": "Time Y"},
-    #   ]
-    #   ...outros campos...
-    # }
+Antes de seguir este fluxo, verifique **OBRIGATORIAMENTE** os pré-requisitos listados no documento indicado abaixo.  
+Esses pré-requisitos dizem respeito **APENAS à criação do repositório e do endpoint no IU Lotus** — **NÃO estão relacionados ao API Gateway** e **não fazem parte da configuração de integração com o endpoint**.
 
-    experiment_id = flavor_params.get("experiment_id", "")
-    model_name = flavor_params.get("model_name", "")
+A jornada mostrada a seguir descreve SOMENTE:
 
-    # 1) tags padrão
-    tags_dict: Dict[str, str] = {
-        "Plataforma": "iulotus",
-        "Experiment_id": experiment_id,
-        "Model_name": model_name,
-    }
+- Como criar o repositório no IU Lotus  
+- Como solicitar o flavor `realtime-sagemaker`  
+- Como configurar o `config.yml` inicial  
+- Como gerar o endpoint pelo pipeline
 
-    # 2) tags extras configuradas pelo usuário
-    tags_list = flavor_params.get("tags", [])  # lista de {key, value}
-    for tag in tags_list:
-        key = tag.get("key")
-        value = tag.get("value")
-        if key and value:
-            tags_dict[key] = value
+Se você está configurando **Gateway**, **integração**, **contrato** ou **API**, este documento **NÃO** trata disso.
 
-    # 3) devolve o bloco pronto em texto
-    return format_tags(tags_dict)
+➡️ **Clique [AQUI](#)** para ver os pré-requisitos obrigatórios.
+:::
