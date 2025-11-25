@@ -1,18 +1,15 @@
-{
-  "instances": [
-    {
-      "question": "teste mensagem",
-      
-      "col0": 0.0186239108,
-      "col1": 0.9423756449,
-      "col2": 0.3432624259,
-      "col3": 0.6790364109,
-      "col4": 0.065697003,
-      "col5": 0.7782610646,
-      "col6": 0.4102710028,
-      "col7": 0.276891474,
-      "col8": 0.0575142003,
-      "col9": 0.3591511435
+locals {
+  tags_array = [
+    for key, value in merge(
+      var.tags,
+      {
+        Plataforma    = "iulotus"
+        Experiment_id = var.experiment_id
+        Model_name    = var.model_name
+      }
+    ) : {
+      Key   = key
+      Value = value
     }
   ]
 }
