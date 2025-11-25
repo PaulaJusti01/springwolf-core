@@ -1,13 +1,31 @@
-def format_tags(tags_dict: Dict[str, str]) -> str:
+def get_tags(flavor_params: Dict) -> str:
     """
-    Recebe um dicionário simples {"chave": "valor"} e monta o bloco:
-      tags = {
-        "chave" = "valor"
-      }
-    que é o que o Terraform do flavor espera.
+    Gera as tags para o módulo:
+      - 3 tags padrão: Plataforma, Experiment_id, Model_name
+      - + as tags vindas do JSON do ambiente (KEY/Value)
     """
-    terraform_tags = "  tags = {\n"
-    for key, value in tags_dict.items():
-        terraform_tags += f'    "{key}" = "{value}"\n'
-    terraform_tags += "  }\n"
-    return terraform_tags
+
+    # 1) Lê o JSON de tags que veio da esteira (variável de ambiente "tags")
+    raw_tags = os.getenv("tags", "{}").replace("'", '"')
+    tags_env = json.loads(raw_tags)
+
+    # 2) Pega o(s) modelo(s) do flavor. Vamos usar o primeiro como Model_name.
+    models = list(flavor_params.keys())
+    model_name = models[0] if models else "default-model"
+
+    # 3) Monta as 3 tags padrão
+    tag_map: Dict[str, str] = {
+        "Plataforma": "iulotus",
+        "Experiment_id": tags_env.get("experiment_id", ""),  # ajuste se vier de outro lugar
+        "Model_name": model_name,
+    }
+
+    # 4) Adiciona as tags extras vindas do JSON para esse modelo, se existirem
+    # Esperando algo como: {"meu_modelo": [{"key": "Owner", "value": "Time X"}, ...]}
+    model_tag_name = model_name.replace("-", "_").replace("iulotus_", "")
+    if model_tag_name in tags_env:
+        for tag in tags_env[model_tag_name]:
+            tag_map[tag["key"]] = tag["value"]
+
+    # 5) Devolve o texto já pronto para colar no module
+    return format_tags(tag_map)
