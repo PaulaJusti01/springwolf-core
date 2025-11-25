@@ -1,15 +1,13 @@
-locals {
-  tags_array = [
-    for key, value in merge(
-      var.tags,
-      {
-        Plataforma    = "iulotus"
-        Experiment_id = var.experiment_id
-        Model_name    = var.model_name
+def format_tags(tags_dict: Dict[str, str]) -> str:
+    """
+    Recebe um dicionário simples {"chave": "valor"} e monta o bloco:
+      tags = {
+        "chave" = "valor"
       }
-    ) : {
-      Key   = key
-      Value = value
-    }
-  ]
-}
+    que é o que o Terraform do flavor espera.
+    """
+    terraform_tags = "  tags = {\n"
+    for key, value in tags_dict.items():
+        terraform_tags += f'    "{key}" = "{value}"\n'
+    terraform_tags += "  }\n"
+    return terraform_tags
