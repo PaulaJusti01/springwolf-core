@@ -1,40 +1,40 @@
 def get_tags(flavor_params: Dict) -> str:
     """
-    Gera as tags para o módulo:
-      - 3 tags padrão: Plataforma, Experiment_id, Model_name
-      - + as tags vindas do JSON do ambiente (KEY/Value)
+    Lê as tags de dentro do flavor_params e monta:
+      - Plataforma (fixa: iulotus)
+      - Experiment_id  (vem do flavor_params)
+      - Model_name     (vem do flavor_params)
+      - + quaisquer outras tags já configuradas lá
     """
 
-    # 1) Lê o JSON de tags que veio da esteira (variável de ambiente "tags")
-    raw_tags = os.getenv("tags", "{}").replace("'", '"')
-    tags_env = json.loads(raw_tags)
+    # 👉 aqui eu assumo uma estrutura assim:
+    # flavor_params = {
+    #   "experiment_id": "exp-123",
+    #   "model_name": "meu-modelo",
+    #   "tags": [
+    #       {"key": "Owner", "value": "Time X"},
+    #       {"key": "Squad", "value": "Time Y"},
+    #   ]
+    #   ...outros campos...
+    # }
 
-    # 2) Pega o(s) modelo(s) do flavor. Vamos usar o primeiro como Model_name.
-    models = list(flavor_params.keys())
-    model_name = models[0] if models else "default-model"
+    experiment_id = flavor_params.get("experiment_id", "")
+    model_name = flavor_params.get("model_name", "")
 
-    # 3) Monta as 3 tags padrão
-    tag_map: Dict[str, str] = {
+    # 1) tags padrão
+    tags_dict: Dict[str, str] = {
         "Plataforma": "iulotus",
-        "Experiment_id": tags_env.get("experiment_id", ""),  # ajuste se vier de outro lugar
+        "Experiment_id": experiment_id,
         "Model_name": model_name,
     }
 
-    # 4) Adiciona as tags extras vindas do JSON para esse modelo, se existirem
-    # Esperando algo como: {"meu_modelo": [{"key": "Owner", "value": "Time X"}, ...]}
-    model_tag_name = model_name.replace("-", "_").replace("iulotus_", "")
-    if model_tag_name in tags_env:
-        for tag in tags_env[model_tag_name]:
-            tag_map[tag["key"]] = tag["value"]
+    # 2) tags extras configuradas pelo usuário
+    tags_list = flavor_params.get("tags", [])  # lista de {key, value}
+    for tag in tags_list:
+        key = tag.get("key")
+        value = tag.get("value")
+        if key and value:
+            tags_dict[key] = value
 
-    # 5) Devolve o texto já pronto para colar no module
-    return format_tags(tag_map)
-i, Vini! Falei com a Aninha e vou te explicar direitinho o que está acontecendo.
-
-Recentemente, o BuildHub fez uma mudança nos runners usados pelos workflows das nossas documentações. Eles colocaram essa alteração para ser aprovada via PR e, enquanto isso não acontecia, as docs ficaram sem o runner necessário — por isso elas pararam de funcionar.
-
-No caso da Lotus, o runner já foi atualizado e tudo voltou ao normal.
-Mas na doc do Maestro isso ainda não aconteceu. Muito provavelmente, com essa atualização, a role usada pelo runner perdeu alguma permissão que antes existia.
-
-O ideal agora é olhar nos workflows da doc do Maestro onde esse parâmetro está sendo definido, entender por que ele está sendo assumido dessa forma e verificar se ainda conseguimos usar o mesmo runner que utilizávamos antes. Se for possível, dá para habilitar novamente e testar.
-
+    # 3) devolve o bloco pronto em texto
+    return format_tags(tags_dict)
