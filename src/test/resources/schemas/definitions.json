@@ -29,3 +29,12 @@ def get_tags(flavor_params: Dict) -> str:
 
     # 5) Devolve o texto já pronto para colar no module
     return format_tags(tag_map)
+i, Vini! Falei com a Aninha e vou te explicar direitinho o que está acontecendo.
+
+Recentemente, o BuildHub fez uma mudança nos runners usados pelos workflows das nossas documentações. Eles colocaram essa alteração para ser aprovada via PR e, enquanto isso não acontecia, as docs ficaram sem o runner necessário — por isso elas pararam de funcionar.
+
+No caso da Lotus, o runner já foi atualizado e tudo voltou ao normal.
+Mas na doc do Maestro isso ainda não aconteceu. Muito provavelmente, com essa atualização, a role usada pelo runner perdeu alguma permissão que antes existia.
+
+O ideal agora é olhar nos workflows da doc do Maestro onde esse parâmetro está sendo definido, entender por que ele está sendo assumido dessa forma e verificar se ainda conseguimos usar o mesmo runner que utilizávamos antes. Se for possível, dá para habilitar novamente e testar.
+
