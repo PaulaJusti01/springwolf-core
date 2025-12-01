@@ -1,31 +1,13 @@
-type: object
-properties:
-  instances:
-    type: array
-    description: Lista de instâncias para predição.
-    items:
-      type: object
-      properties:
-        col0:  { type: number }
-        col1:  { type: number }
-        col2:  { type: number }
-        col3:  { type: number }
-        col4:  { type: number }
-        col5:  { type: number }
-        col6:  { type: number }
-        col7:  { type: number }
-        col8:  { type: number }
-        col9:  { type: number }
-      required:
-        - col0
-        - col1
-        - col2
-        - col3
-        - col4
-        - col5
-        - col6
-        - col7
-        - col8
-        - col9
-required:
-  - instances
+x-amazon-apigateway-integration:
+  type: aws
+  httpMethod: POST
+  uri: arn:aws:apigateway:sa-east-1:runtime.sagemaker:path/endpoints/{modelId}/invocations
+  credentials: arn:aws:iam::${iulpipes_deploy_aws_env_account}:role/${iulpipes_deploy_role}
+  passthroughBehavior: "when_no_templates"
+  requestTemplates:
+    application/json: "$input.body"
+  responses:
+    default:
+      statusCode: "200"
+      responseTemplates:
+        application/json: "$input.body"
