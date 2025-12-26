@@ -1,16 +1,51 @@
-## BYOC (Bring Your Own Code)
+infra:
+  terraform:
+    destroy: 'false'           # Define se a infraestrutura pode ser destruída via pipeline.
+                               # Deve permanecer como 'false' para evitar exclusões acidentais.
 
-O **BYOC** é a esteira mais flexível da plataforma, indicada para quem precisa de **controle total sobre o código e a infraestrutura** da aplicação.
+flavor:
+  name: builtin-batch          # Nome da esteira (flavor) utilizada no deploy.
+                               # Neste caso, a esteira Built-in Batch.
 
-### Características
-- **Alta flexibilidade** na organização do repositório, permitindo definir livremente as pastas de `app` e `infra`.
-- **Criação de imagens Docker customizadas**, adaptadas às necessidades da aplicação.
-- **Infraestrutura como código versionada no repositório**, garantindo rastreabilidade e controle de mudanças.
-- **Gates de qualidade**, com validações automáticas como **Sonar**, **Veracode** e **testes unitários**.
+  version: v1.1.3              # Versão da esteira.
+                               # Controla compatibilidade e comportamento do deploy.
 
-### Requisitos
-- É necessário definir uma **sigla da aplicação (`sigla_app`)** para o projeto.
+  params:
+    dev:                        # Parâmetros específicos do ambiente Dev.
 
-### Quando usar
-- Quando há necessidade de **controle total** sobre o código e a infraestrutura.
-- Quando se deseja criar uma solução **totalmente customizada**, adaptada às necessidades específicas do time ou do produto.
+      enable_network_isolation: true
+                               # Habilita isolamento de rede no SageMaker.
+                               # Impede que o container faça chamadas externas à VPC/internet.
+
+      instance_type: ml.m5.large
+                               # Tipo de instância usada para execução do batch/inferência.
+                               # Define capacidade de CPU, memória e custo.
+
+      inference_environment:
+        LOG_LEVEL: INFO         # Variável de ambiente passada para o container.
+                               # Controla o nível de log da aplicação (INFO, DEBUG, ERROR, etc).
+
+      data_capture:
+        mode: Input             # Define o modo de captura de dados.
+                               # 'Input' captura apenas os dados de entrada da inferência.
+        percentage: 50          # Percentual das requisições que terão dados capturados.
+                               # Usado para monitoramento e auditoria.
+
+      autoscaling:
+        min_capacity: 1         # Número mínimo de instâncias ativas.
+                               # Garante disponibilidade mínima do serviço.
+
+        max_capacity: 5         # Número máximo de instâncias permitidas.
+                               # Limita custo e escala do endpoint.
+
+        max_requests_per_minute_per_instance: 1000
+                               # Limite de requisições por minuto que cada instância suporta.
+                               # Usado como métrica para escalar.
+
+        scale_in_cooldown_secs: 300
+                               # Tempo (em segundos) de espera antes de reduzir instâncias.
+                               # Evita scale in agressivo após picos de tráfego.
+
+        scale_out_cooldown_secs: 300
+                               # Tempo (em segundos) de espera antes de aumentar instâncias.
+                               # Evita scale out excessivo em picos curtos.
