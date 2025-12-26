@@ -1,12 +1,16 @@
-BYOC (Bring Your Own Code)
-O BYOC é a esteira mais flexível da plataforma, indicada para quem precisa de controle total sobre o código e a infraestrutura da aplicação.
-Principais características
-Alta flexibilidade: permite organizar livremente as pastas de app e infra dentro do repositório.
-Imagens Docker customizadas: possibilita criar e gerenciar imagens sob medida para a aplicação.
-Infraestrutura como código no repositório: toda a definição de infraestrutura fica versionada junto ao código.
-Gates de qualidade: inclui validações automáticas, como Sonar, Veracode e testes unitários.
-Requisitos
-É necessário definir uma sigla da aplicação (sigla_app) para o projeto.
-Quando usar
-Quando há necessidade de controle total sobre o código e a infraestrutura.
-Quando se deseja criar uma solução completamente customizada, adaptada às necessidades específicas do time ou do produto.
+## BYOC (Bring Your Own Code)
+
+O **BYOC** é a esteira mais flexível da plataforma, indicada para quem precisa de **controle total sobre o código e a infraestrutura** da aplicação.
+
+### Características
+- **Alta flexibilidade** na organização do repositório, permitindo definir livremente as pastas de `app` e `infra`.
+- **Criação de imagens Docker customizadas**, adaptadas às necessidades da aplicação.
+- **Infraestrutura como código versionada no repositório**, garantindo rastreabilidade e controle de mudanças.
+- **Gates de qualidade**, com validações automáticas como **Sonar**, **Veracode** e **testes unitários**.
+
+### Requisitos
+- É necessário definir uma **sigla da aplicação (`sigla_app`)** para o projeto.
+
+### Quando usar
+- Quando há necessidade de **controle total** sobre o código e a infraestrutura.
+- Quando se deseja criar uma solução **totalmente customizada**, adaptada às necessidades específicas do time ou do produto.
