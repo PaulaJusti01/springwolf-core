@@ -1,51 +1,20 @@
-infra:
-  terraform:
-    destroy: 'false'           # Define se a infraestrutura pode ser destruída via pipeline.
-                               # Deve permanecer como 'false' para evitar exclusões acidentais.
+import json
+import boto3
 
-flavor:
-  name: builtin-batch          # Nome da esteira (flavor) utilizada no deploy.
-                               # Neste caso, a esteira Built-in Batch.
+endpoint_name = "iulotus-teste-realtime"
 
-  version: v1.1.3              # Versão da esteira.
-                               # Controla compatibilidade e comportamento do deploy.
+smr = boto3.client("sagemaker-runtime", region_name="sa-east-1")
 
-  params:
-    dev:                        # Parâmetros específicos do ambiente Dev.
+payload = {
+  "instances": [
+    { "question": "exemplo de pergunta" }
+  ]
+}
 
-      enable_network_isolation: true
-                               # Habilita isolamento de rede no SageMaker.
-                               # Impede que o container faça chamadas externas à VPC/internet.
+response = smr.invoke_endpoint(
+    EndpointName=endpoint_name,
+    ContentType="application/json",
+    Body=json.dumps(payload).encode("utf-8")
+)
 
-      instance_type: ml.m5.large
-                               # Tipo de instância usada para execução do batch/inferência.
-                               # Define capacidade de CPU, memória e custo.
-
-      inference_environment:
-        LOG_LEVEL: INFO         # Variável de ambiente passada para o container.
-                               # Controla o nível de log da aplicação (INFO, DEBUG, ERROR, etc).
-
-      data_capture:
-        mode: Input             # Define o modo de captura de dados.
-                               # 'Input' captura apenas os dados de entrada da inferência.
-        percentage: 50          # Percentual das requisições que terão dados capturados.
-                               # Usado para monitoramento e auditoria.
-
-      autoscaling:
-        min_capacity: 1         # Número mínimo de instâncias ativas.
-                               # Garante disponibilidade mínima do serviço.
-
-        max_capacity: 5         # Número máximo de instâncias permitidas.
-                               # Limita custo e escala do endpoint.
-
-        max_requests_per_minute_per_instance: 1000
-                               # Limite de requisições por minuto que cada instância suporta.
-                               # Usado como métrica para escalar.
-
-        scale_in_cooldown_secs: 300
-                               # Tempo (em segundos) de espera antes de reduzir instâncias.
-                               # Evita scale in agressivo após picos de tráfego.
-
-        scale_out_cooldown_secs: 300
-                               # Tempo (em segundos) de espera antes de aumentar instâncias.
-                               # Evita scale out excessivo em picos curtos.
+print(response["Body"].read().decode("utf-8"))
