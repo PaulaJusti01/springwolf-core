@@ -1,18 +1,109 @@
-## 🐳 Docker
+## 📁 app/
 
-### 📄 Dockerfile
-Arquivo responsável por definir a **imagem Docker** da aplicação no padrão BYOC.
+Diretório responsável pelo **código da aplicação** no padrão BYOC do IU Lotus.  
+Aqui ficam a implementação da lógica de negócio, artefatos auxiliares, scripts, testes e a definição da imagem Docker.
 
-É nele que são configurados, por exemplo:
-- a **imagem base** (runtime),
-- a instalação de **dependências** (ex.: `requirements.txt`),
-- a cópia do código da aplicação para dentro do container,
-- variáveis de ambiente e comandos de inicialização (`ENTRYPOINT`/`CMD`).
+---
 
-A imagem gerada a partir do `Dockerfile` é a base utilizada no processo de **build e publicação no ECR** pela pipeline do **IU Lotus** (quando `publish.ecr: true`).
+### 📁 app/artifacts/
 
-> Observação: a localização do `Dockerfile` pode variar conforme o padrão do time (ex.: raiz do repositório ou dentro de `app/`), mas ele deve ser referenciado de forma compatível com o fluxo de build definido no `iupipes.yml`.
+Contém **artefatos auxiliares da aplicação**, como arquivos intermediários, modelos, parâmetros ou recursos necessários durante a execução.
 
-### 📄 .dockerignore (opcional)
-Arquivo que define quais arquivos/pastas **não** devem ser copiados para o contexto do Docker build, reduzindo tamanho de imagem e tempo de build.
-Exemplos comuns: `.git/`, `__pycache__/`, `.venv/`, `tests/`, arquivos locais e caches.
+> O conteúdo desta pasta varia conforme a implementação da aplicação.
+
+---
+
+### 📁 app/server/
+
+Diretório responsável pela **camada de serviço** da aplicação.
+
+Normalmente contém:
+- inicialização do servidor,
+- definição de endpoints,
+- configuração de frameworks (ex.: FastAPI, Flask),
+- integração entre a aplicação e o runtime de execução.
+
+---
+
+### 📁 app/shell-scripts/
+
+Scripts auxiliares em **shell** utilizados durante build, deploy ou execução da aplicação.
+
+Exemplos comuns:
+- scripts de inicialização,
+- validações de ambiente,
+- ajustes de permissões,
+- comandos customizados do container.
+
+---
+
+### 📁 app/src/
+
+Diretório principal do **código-fonte da aplicação**.
+
+Geralmente contém:
+- lógica de negócio,
+- classes e funções principais,
+- processamento de dados,
+- carregamento e execução de modelos.
+
+---
+
+### 📁 app/tests/
+
+Contém os **testes automatizados da aplicação**, como testes unitários e de integração.
+
+Esses testes podem ser executados:
+- localmente,
+- durante o build,
+- como parte dos gates de qualidade da esteira.
+
+---
+
+### 📄 app/Dockerfile
+
+Arquivo responsável por definir a **imagem Docker da aplicação** no padrão BYOC.
+
+Define, entre outros:
+- imagem base (runtime),
+- instalação de dependências,
+- cópia do código para o container,
+- comandos de inicialização da aplicação.
+
+A imagem gerada a partir deste `Dockerfile` é utilizada no processo de **build e publicação no Amazon ECR** pela pipeline do IU Lotus.
+
+---
+
+### 📄 app/requirements.txt
+
+Lista de **dependências Python da aplicação**.
+
+Utilizado durante:
+- o build da imagem Docker,
+- a execução local,
+- a execução de testes.
+
+---
+
+### 📄 app/sys-requirements.txt
+
+Lista de **dependências de sistema operacional** necessárias para a aplicação.
+
+Exemplos:
+- bibliotecas nativas,
+- pacotes do sistema,
+- dependências exigidas por bibliotecas Python.
+
+---
+
+### 📄 app/tox.ini
+
+Arquivo de configuração do **Tox**, utilizado para padronizar a execução de testes e validações locais.
+
+Define:
+- ambientes de teste,
+- versões de Python,
+- comandos de execução,
+- integrações com linters e frameworks de teste.
+
+---
