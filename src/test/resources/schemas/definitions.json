@@ -1,11 +1,71 @@
-# Arquivo de variáveis Terraform utilizado para o ambiente de Desenvolvimento (Dev)
+# Arquivo de configuração da pipeline IU Lotus (iupipes.yml)
+# Define build, testes, publicação, infraestrutura, deploy, qualidade e segurança
 
-model_mode             = "SingleModel"          # Define o modo de execução do modelo no SageMaker.
-instance_type          = "ml.t2.medium"          # Tipo de instância utilizada para execução do modelo.
-security_groups        = ["sg-0483c3fe6fd2df2d0"]# Security Group associado aos recursos da aplicação.
-subnet_ids             = ["subnet-0fc7f8d1934a6bce4", "subnet-029ea35e1144dcee8"] # Subnets onde os recursos serão provisionados.
-initial_instance_count = 1                       # Quantidade inicial de instâncias do endpoint.
-repo_name              = "itau-pf2-app-byoc-teste"# Nome do repositório da aplicação.
-experiment_id          = "a703ab95-5e01-48f8-baf3-202b4fcff58f" # Identificador do experimento para rastreabilidade.
-owner_team_email       = "paula.justi.silva@itau-unibanco.com.br" # E-mail do time responsável pela aplicação.
-tech_team_email        = "paula.justi.silva@itau-unibanco.com.br" # E-mail do time técnico responsável pelo suporte.
+build:
+  python-version: "3.9"                     # Versão do Python utilizada no build da aplicação.
+  working-directory:
+    - app                                   # Diretório onde está o código da aplicação.
+  architecture: "x64"                       # Arquitetura utilizada no build (x64 ou x86).
+  requirement-path: "requirements.txt"      # Caminho do arquivo de dependências Python.
+  # docker-platform: linux/arm64             # Plataforma Docker utilizada no build (opcional).
+
+test:
+  requirement-path: "requirements.txt"      # Caminho do arquivo de dependências para execução dos testes.
+  disable: false                            # Habilita ou desabilita a execução de testes unitários.
+
+publish:
+  ecr: true                                 # Define se a imagem Docker será publicada no Amazon ECR.
+  deploy-only: ""                           # Restringe o publish apenas para deploys específicos (quando definido).
+  copy-all-dependency: false                # Copia todas as dependências para a imagem final.
+  install-dependency-path: ""               # Caminho alternativo para instalação de dependências.
+  ecr-latest-tag: true                      # Adiciona a tag `latest` à imagem publicada no ECR.
+  andromeda-repository: false               # Habilita o download de artefatos do Andromeda no build da imagem.
+
+infra:
+  terraform:
+    destroy: "false"                        # Controla se a esteira pode destruir recursos Terraform.
+    working-directory: "infra/"             # Diretório onde estão os arquivos Terraform.
+    aws-statefile-acl: "private"            # ACL do statefile armazenado no S3.
+    aws-s3-data-retention: 0                # Tempo de retenção dos dados no S3 (em dias).
+    aws-s3-data-classification: "Interna"   # Classificação dos dados armazenados no S3.
+    aws-tech-team-email: "paula.justi-silva@itau-unibanco.com.br" # E-mail do time técnico responsável.
+    aws-owner-contact-email: "paula.justi-silva@itau-unibanco.com.br" # E-mail do time dono da aplicação.
+    aws-region: "sa-east-1"                 # Região AWS onde os recursos serão provisionados.
+
+deploy:
+  aws:
+    dev:
+      account: "873649638797"               # Account AWS do ambiente de Desenvolvimento.
+    hom:
+      account: "618076053805"               # Account AWS do ambiente de Homologação.
+    prod:
+      account: "328319468777"               # Account AWS do ambiente de Produção.
+
+quality:
+  sonar:
+    language: "python"                      # Linguagem utilizada na análise de código pelo Sonar.
+    working-directory: "app"                # Diretório onde está o código analisado.
+    projectPropertiesPath: ""               # Caminho do arquivo sonar-project.properties (quando utilizado).
+    gate-name: ""                           # Nome do Quality Gate do Sonar (default: Sonar way).
+    parameters: ""                          # Parâmetros adicionais para a análise do Sonar.
+
+security:
+  fortify:
+    environment-analyse: "public_cloud"     # Ambiente de análise do Fortify (public_cloud ou private_cloud).
+    nome-aws: "PlataformaCienciaDados"      # Nome da aplicação no BOH / Fortify.
+    produto-aws: "testesteirabatchtransform"# Nome do produto/conta AWS associado.
+    sigla: "PF2"                            # Sigla da área/produto.
+    sigla-app: "PF2-T1004"                  # Sigla da aplicação utilizada na esteira.
+
+taac:
+  dev:
+    failOnError: true                       # Define se a pipeline deve falhar em erro no ambiente Dev.
+    codebuild:
+      computeType: "BUILD_GENERAL1_SMALL"   # Tipo de máquina CodeBuild utilizada nos testes.
+  hom:
+    failOnError: true                       # Define se a pipeline deve falhar em erro no ambiente Hom.
+    codebuild:
+      computeType: "BUILD_GENERAL1_SMALL"   # Tipo de máquina CodeBuild utilizada nos testes.
+
+info:
+  validacao: "arquivo alterado pelo read config" # Informação interna de validação/configuração da esteira.
