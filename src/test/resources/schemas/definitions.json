@@ -1,20 +1,135 @@
-import json
-import boto3
+# Estrutura do Repositório – BYOC | IU Lotus
 
-endpoint_name = "iulotus-teste-realtime"
+Este repositório segue o padrão **BYOC (Bring Your Own Code)** do **IU Lotus**, no qual o time é responsável pelo código da aplicação, infraestrutura como código, políticas de segurança e testes, mantendo total autonomia e controle sobre a solução.
 
-smr = boto3.client("sagemaker-runtime", region_name="sa-east-1")
+A seguir, está descrita a finalidade de cada diretório e arquivo do repositório.
 
-payload = {
-  "instances": [
-    { "question": "exemplo de pergunta" }
-  ]
-}
+---
 
-response = smr.invoke_endpoint(
-    EndpointName=endpoint_name,
-    ContentType="application/json",
-    Body=json.dumps(payload).encode("utf-8")
-)
+## 📁 infra/
 
-print(response["Body"].read().decode("utf-8"))
+Diretório responsável por toda a **infraestrutura como código (IaC)** da aplicação, utilizando Terraform e padrões definidos pela plataforma IU Lotus.
+
+---
+
+### 📁 infra/iamsr/
+
+Contém recursos relacionados a **IAM (Identity and Access Management)**, incluindo políticas de permissão e relações de confiança utilizadas pelos serviços AWS.
+
+#### 📁 infra/iamsr/policy/
+
+Define as **políticas IAM** associadas aos serviços utilizados pela aplicação.
+
+- `policy-sagemaker.json`  
+  Política com permissões gerais necessárias para utilização do Amazon SageMaker.
+
+- `policy-sagemaker-model.json`  
+  Política específica para criação, atualização e execução de modelos SageMaker.
+
+- `policy-step-function.json`  
+  Política que concede permissões para execução de fluxos com AWS Step Functions.
+
+> A pasta `.ipynb_checkpoints` é criada automaticamente por ferramentas de desenvolvimento e não faz parte da infraestrutura da aplicação.
+
+---
+
+#### 📁 infra/iamsr/trust/
+
+Define as **trust relationships** dos roles IAM, especificando quais serviços AWS podem assumir cada role.
+
+- `trust-sagemaker-model.json`  
+  Permite que o serviço Amazon SageMaker assuma o role configurado para execução do modelo.
+
+---
+
+### 📁 infra/inventories/
+
+Contém os arquivos de variáveis do Terraform por ambiente, permitindo a customização da infraestrutura conforme o contexto de execução.
+
+- `dev/terraform.tfvars`  
+  Variáveis específicas do ambiente **Desenvolvimento (Dev)**.
+
+- `hom/terraform.tfvars`  
+  Variáveis específicas do ambiente **Homologação (Hom)**.
+
+- `prod/terraform.tfvars`  
+  Variáveis específicas do ambiente **Produção (Prod)**.
+
+---
+
+### 📁 infra/tests/
+
+Diretório reservado para **testes de infraestrutura**, quando aplicável, seguindo os padrões de validação da plataforma.
+
+---
+
+### 📄 infra/main.tf
+
+Arquivo principal do Terraform.  
+Responsável por definir e orquestrar a criação dos recursos de infraestrutura da aplicação, como serviços do SageMaker, IAM e integrações necessárias.
+
+---
+
+### 📄 infra/variables.tf
+
+Declaração das **variáveis Terraform** utilizadas nos arquivos `.tf`, garantindo padronização e reutilização dos parâmetros de infraestrutura.
+
+---
+
+## 📁 tests/
+
+Diretório responsável pela definição de **testes automatizados e validações da esteira**.
+
+- `testspec-dev.yml`  
+  Especificação dos testes executados no ambiente **Dev**.
+
+- `testspec-hom.yml`  
+  Especificação dos testes executados no ambiente **Homologação**.
+
+Esses arquivos controlam a execução de testes, gates de qualidade e validações exigidas antes do deploy.
+
+---
+
+## 📄 iupipes.yml
+
+Arquivo de configuração da **pipeline do IU Lotus**.
+
+Define:
+- Etapas do pipeline
+- Ordem de execução
+- Integração com testes, build e deploy
+- Comportamento da esteira BYOC na plataforma
+
+---
+
+## 📄 config.yml
+
+Arquivo central de **configuração da aplicação** no IU Lotus.
+
+Define:
+- Esteira (flavor) utilizada
+- Versão da esteira
+- Parâmetros por ambiente (Dev, Hom, Prod)
+- Configurações de infraestrutura, autoscaling, data capture e variáveis de ambiente
+
+---
+
+## 📄 README.md
+
+Documentação principal do repositório.
+
+Deve conter:
+- Descrição da aplicação
+- Visão geral da arquitetura
+- Instruções de uso e deploy
+- Observações importantes sobre a esteira BYOC
+
+---
+
+## 📄 requirements.txt
+
+Lista de **dependências Python** necessárias para a aplicação ou para execução dos testes automatizados.
+
+Utilizado durante o build da imagem e execução dos pipelines.
+
+---
