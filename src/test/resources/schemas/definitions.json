@@ -1,71 +1,18 @@
-# Arquivo de configuração da pipeline IU Lotus (iupipes.yml)
-# Define build, testes, publicação, infraestrutura, deploy, qualidade e segurança
+## 🐳 Docker
 
-build:
-  python-version: "3.9"                     # Versão do Python utilizada no build da aplicação.
-  working-directory:
-    - app                                   # Diretório onde está o código da aplicação.
-  architecture: "x64"                       # Arquitetura utilizada no build (x64 ou x86).
-  requirement-path: "requirements.txt"      # Caminho do arquivo de dependências Python.
-  # docker-platform: linux/arm64             # Plataforma Docker utilizada no build (opcional).
+### 📄 Dockerfile
+Arquivo responsável por definir a **imagem Docker** da aplicação no padrão BYOC.
 
-test:
-  requirement-path: "requirements.txt"      # Caminho do arquivo de dependências para execução dos testes.
-  disable: false                            # Habilita ou desabilita a execução de testes unitários.
+É nele que são configurados, por exemplo:
+- a **imagem base** (runtime),
+- a instalação de **dependências** (ex.: `requirements.txt`),
+- a cópia do código da aplicação para dentro do container,
+- variáveis de ambiente e comandos de inicialização (`ENTRYPOINT`/`CMD`).
 
-publish:
-  ecr: true                                 # Define se a imagem Docker será publicada no Amazon ECR.
-  deploy-only: ""                           # Restringe o publish apenas para deploys específicos (quando definido).
-  copy-all-dependency: false                # Copia todas as dependências para a imagem final.
-  install-dependency-path: ""               # Caminho alternativo para instalação de dependências.
-  ecr-latest-tag: true                      # Adiciona a tag `latest` à imagem publicada no ECR.
-  andromeda-repository: false               # Habilita o download de artefatos do Andromeda no build da imagem.
+A imagem gerada a partir do `Dockerfile` é a base utilizada no processo de **build e publicação no ECR** pela pipeline do **IU Lotus** (quando `publish.ecr: true`).
 
-infra:
-  terraform:
-    destroy: "false"                        # Controla se a esteira pode destruir recursos Terraform.
-    working-directory: "infra/"             # Diretório onde estão os arquivos Terraform.
-    aws-statefile-acl: "private"            # ACL do statefile armazenado no S3.
-    aws-s3-data-retention: 0                # Tempo de retenção dos dados no S3 (em dias).
-    aws-s3-data-classification: "Interna"   # Classificação dos dados armazenados no S3.
-    aws-tech-team-email: "paula.justi-silva@itau-unibanco.com.br" # E-mail do time técnico responsável.
-    aws-owner-contact-email: "paula.justi-silva@itau-unibanco.com.br" # E-mail do time dono da aplicação.
-    aws-region: "sa-east-1"                 # Região AWS onde os recursos serão provisionados.
+> Observação: a localização do `Dockerfile` pode variar conforme o padrão do time (ex.: raiz do repositório ou dentro de `app/`), mas ele deve ser referenciado de forma compatível com o fluxo de build definido no `iupipes.yml`.
 
-deploy:
-  aws:
-    dev:
-      account: "873649638797"               # Account AWS do ambiente de Desenvolvimento.
-    hom:
-      account: "618076053805"               # Account AWS do ambiente de Homologação.
-    prod:
-      account: "328319468777"               # Account AWS do ambiente de Produção.
-
-quality:
-  sonar:
-    language: "python"                      # Linguagem utilizada na análise de código pelo Sonar.
-    working-directory: "app"                # Diretório onde está o código analisado.
-    projectPropertiesPath: ""               # Caminho do arquivo sonar-project.properties (quando utilizado).
-    gate-name: ""                           # Nome do Quality Gate do Sonar (default: Sonar way).
-    parameters: ""                          # Parâmetros adicionais para a análise do Sonar.
-
-security:
-  fortify:
-    environment-analyse: "public_cloud"     # Ambiente de análise do Fortify (public_cloud ou private_cloud).
-    nome-aws: "PlataformaCienciaDados"      # Nome da aplicação no BOH / Fortify.
-    produto-aws: "testesteirabatchtransform"# Nome do produto/conta AWS associado.
-    sigla: "PF2"                            # Sigla da área/produto.
-    sigla-app: "PF2-T1004"                  # Sigla da aplicação utilizada na esteira.
-
-taac:
-  dev:
-    failOnError: true                       # Define se a pipeline deve falhar em erro no ambiente Dev.
-    codebuild:
-      computeType: "BUILD_GENERAL1_SMALL"   # Tipo de máquina CodeBuild utilizada nos testes.
-  hom:
-    failOnError: true                       # Define se a pipeline deve falhar em erro no ambiente Hom.
-    codebuild:
-      computeType: "BUILD_GENERAL1_SMALL"   # Tipo de máquina CodeBuild utilizada nos testes.
-
-info:
-  validacao: "arquivo alterado pelo read config" # Informação interna de validação/configuração da esteira.
+### 📄 .dockerignore (opcional)
+Arquivo que define quais arquivos/pastas **não** devem ser copiados para o contexto do Docker build, reduzindo tamanho de imagem e tempo de build.
+Exemplos comuns: `.git/`, `__pycache__/`, `.venv/`, `tests/`, arquivos locais e caches.
